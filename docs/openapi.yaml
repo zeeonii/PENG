@@ -1,0 +1,19 @@
+openapi: 3.0.3
+info:
+  title: sixpeng API
+  description: API specification for the sixpeng project
+  version: 0.0.1
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+paths:
+  /api/members:
+    get:
+      summary: List members
+      tags:
+        - member
+      responses:
+        "200":
+          description: OK
+components:
+  schemas: {}
