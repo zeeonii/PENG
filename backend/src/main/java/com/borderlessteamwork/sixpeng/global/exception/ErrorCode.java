@@ -12,6 +12,8 @@ public enum ErrorCode {
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "C004", "Method not allowed"),
     ACCESS_DENIED(HttpStatus.FORBIDDEN, "C005", "Access is denied"),
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "C006", "Unauthorized"),
+
+    TRANSLATION_FAILED(HttpStatus.BAD_GATEWAY, "T001", "Translation API call failed"),
     ;
 
     private final HttpStatus status;

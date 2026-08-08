@@ -1,19 +1,100 @@
-// ERD for sixpeng
-// https://dbml.dbdiagram.io/docs syntax
-
 Table member {
   id bigint [pk, increment]
-  email varchar [not null, unique]
+  google_id varchar [unique, not null]
+  email varchar [unique, not null]
   name varchar [not null]
+  language varchar [not null, note: 'KR or EN']
+  country varchar
+  timezone varchar
+  duty varchar [note: '담당 업무']
   created_at timestamp [not null, default: `now()`]
-  updated_at timestamp
+
+  Note: '사용자 (Google OAuth 기반)'
 }
 
 Table project {
   id bigint [pk, increment]
-  owner_id bigint [not null, ref: > member.id]
-  title varchar [not null]
-  description text
+  name varchar [not null]
+  created_by bigint [not null, ref: > member.id]
   created_at timestamp [not null, default: `now()`]
-  updated_at timestamp
+}
+
+Table project_member {
+  id bigint [pk, increment]
+  project_id bigint [not null, ref: > project.id]
+  member_id bigint [not null, ref: > member.id]
+  role varchar [note: 'PM, Backend, Design 등']
+  joined_at timestamp [not null, default: `now()`]
+
+  indexes {
+    (project_id, member_id) [unique]
+  }
+}
+
+Table document {
+  id bigint [pk, increment]
+  project_id bigint [not null, ref: > project.id]
+  source_type varchar [not null, note: 'NOTION or GOOGLE_MEET']
+  title varchar
+  content text [not null]
+  source_url varchar
+  collected_at timestamp [not null, default: `now()`]
+
+  Note: 'Notion/Google Meet에서 수집한 원본 데이터, Context Q&A/Briefing 근거로 사용'
+}
+
+Table briefing {
+  id bigint [pk, increment]
+  project_id bigint [not null, ref: > project.id]
+  member_id bigint [not null, ref: > member.id, note: '이 브리핑을 받을 대상자']
+  summary text [not null]
+  created_at timestamp [not null, default: `now()`]
+}
+
+Table briefing_source {
+  id bigint [pk, increment]
+  briefing_id bigint [not null, ref: > briefing.id]
+  document_id bigint [not null, ref: > document.id]
+
+  Note: '브리핑 카드 하단 근거 출처 태그'
+}
+
+Table qna_history {
+  id bigint [pk, increment]
+  project_id bigint [not null, ref: > project.id]
+  member_id bigint [not null, ref: > member.id]
+  question text [not null]
+  answer text [not null]
+  created_at timestamp [not null, default: `now()`]
+}
+
+Table qna_source {
+  id bigint [pk, increment]
+  qna_history_id bigint [not null, ref: > qna_history.id]
+  document_id bigint [not null, ref: > document.id]
+}
+
+Table message {
+  id bigint [pk, increment]
+  project_id bigint [not null, ref: > project.id]
+  sender_id bigint [not null, ref: > member.id]
+  receiver_id bigint [not null, ref: > member.id]
+  original_text text [not null]
+  translated_text text [note: '한-영 자동 변환 결과']
+  is_read boolean [not null, default: false]
+  created_at timestamp [not null, default: `now()`]
+
+  Note: '팀원 간 비동기 쪽지, Cultural Translation 동일 적용'
+}
+
+Table integration_status {
+  id bigint [pk, increment]
+  project_id bigint [not null, ref: > project.id]
+  type varchar [not null, note: 'NOTION or GOOGLE_MEET']
+  status varchar [not null, note: 'CONNECTED or DISCONNECTED']
+  last_synced_at timestamp
+
+  indexes {
+    (project_id, type) [unique]
+  }
 }
