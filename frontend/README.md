@@ -88,3 +88,16 @@ export default function HomePage() {
 디자인이 아직 미확정이라 색상은 `tailwind.config.js`의 임시 토큰(무채색 기준)을 사용합니다. 각 컴포넌트 파일 상단에 "디자인 확정 시 교체 필요" 주석이 있는 부분(로고, AI 아바타 등)은 디자인 확정 후 교체가 필요합니다.
 
 디자인 값을 바꿀 때는 `tailwind.config.js`의 `theme.extend.colors` 값만 수정하면 전체 컴포넌트에 자동 반영됩니다.
+
+## 승언 담당 화면 mock 구현
+
+| 화면 | 경로 |
+| --- | --- |
+| 로그인 | `/login` |
+| 홈 대시보드 | `/home` |
+| 프로젝트 목록 | `/projects` |
+| 프로젝트 생성 | `/projects/new` |
+| 프로젝트 상세 홈 | `/projects/teamline` |
+| 쪽지 | `/notes` |
+
+현재 로그인, 프로젝트 생성, Notion 연결, 프로젝트 검색/필터, 쪽지 전송은 모두 mock 동작입니다. 실제 API 연동 시 `src/mock/projectData.js`의 데이터를 API 호출 결과로 교체하면 됩니다.

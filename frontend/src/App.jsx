@@ -1,14 +1,21 @@
-/**
- * 페이지 라우팅은 아직 구성되지 않았습니다 (pages/는 빈 구조만 존재).
- * 실제 라우팅은 이후 이슈에서 routes/, pages/ 내용을 채우며 연결할 예정입니다.
- */
-
-import MainLayout from "./layouts/MainLayout.jsx";
+import { Navigate, Route, Routes } from "react-router-dom";
+import LoginPage from "./pages/Login/LoginPage.jsx";
+import HomePage from "./pages/Home/HomePage.jsx";
+import ProjectListPage from "./pages/Project/ProjectList/ProjectListPage.jsx";
+import ProjectCreatePage from "./pages/Project/ProjectCreate/ProjectCreatePage.jsx";
+import ProjectHomePage from "./pages/Project/ProjectDetail/Home/ProjectHomePage.jsx";
+import NotePage from "./pages/Note/NotePage.jsx";
 
 export default function App() {
   return (
-    <MainLayout>
-      <p className="text-sm text-muted">페이지 준비 중입니다.</p>
-    </MainLayout>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/home" element={<HomePage />} />
+      <Route path="/projects" element={<ProjectListPage />} />
+      <Route path="/projects/new" element={<ProjectCreatePage />} />
+      <Route path="/projects/:projectId" element={<ProjectHomePage />} />
+      <Route path="/notes" element={<NotePage />} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
+    </Routes>
   );
 }

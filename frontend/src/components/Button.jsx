@@ -18,13 +18,14 @@ export default function Button({
   type = "button",
   onClick,
   children,
+  className = "",
   ...props
 }) {
   return (
     <button
       type={type}
       onClick={onClick}
-      className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${VARIANT_STYLES[variant]}`}
+      className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${VARIANT_STYLES[variant]} ${className}`}
       {...props}
     >
       {children}
