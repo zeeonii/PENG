@@ -14,6 +14,9 @@ public enum ErrorCode {
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "C006", "Unauthorized"),
 
     TRANSLATION_FAILED(HttpStatus.BAD_GATEWAY, "T001", "Translation API call failed"),
+
+    NOTION_AUTH_FAILED(HttpStatus.BAD_GATEWAY, "I001", "Notion OAuth authorization failed"),
+    INVALID_OAUTH_STATE(HttpStatus.BAD_REQUEST, "I002", "Invalid OAuth state parameter"),
     ;
 
     private final HttpStatus status;

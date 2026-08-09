@@ -1,0 +1,49 @@
+package com.borderlessteamwork.sixpeng.domain.integration.controller;
+
+import com.borderlessteamwork.sixpeng.domain.integration.dto.response.IntegrationStatusResponse;
+import com.borderlessteamwork.sixpeng.domain.integration.dto.response.NotionAuthorizeResponse;
+import com.borderlessteamwork.sixpeng.domain.integration.service.IntegrationService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.net.URI;
+import java.util.List;
+
+@RestController
+@RequiredArgsConstructor
+public class IntegrationController {
+
+    private final IntegrationService integrationService;
+
+    @PostMapping("/projects/{projectId}/integrations/notion")
+    public ResponseEntity<NotionAuthorizeResponse> startNotionConnection(@PathVariable Long projectId) {
+        return ResponseEntity.ok(integrationService.startNotionConnection(projectId));
+    }
+
+    @GetMapping("/integrations/notion/callback")
+    public ResponseEntity<Void> handleNotionCallback(
+            @RequestParam String code,
+            @RequestParam String state
+    ) {
+        String redirectUrl = integrationService.handleNotionCallback(code, state);
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create(redirectUrl))
+                .build();
+    }
+
+    @PostMapping("/projects/{projectId}/integrations/google-meet")
+    public ResponseEntity<IntegrationStatusResponse> connectGoogleMeet(@PathVariable Long projectId) {
+        return ResponseEntity.ok(integrationService.connectGoogleMeet(projectId));
+    }
+
+    @GetMapping("/projects/{projectId}/integrations/status")
+    public ResponseEntity<List<IntegrationStatusResponse>> getStatus(@PathVariable Long projectId) {
+        return ResponseEntity.ok(integrationService.getStatus(projectId));
+    }
+}

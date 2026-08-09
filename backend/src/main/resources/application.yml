@@ -6,3 +6,13 @@ google:
   translate:
     base-url: https://translation.googleapis.com/language/translate/v2
     api-key: ${GOOGLE_TRANSLATE_API_KEY:}
+
+notion:
+  client-id: ${NOTION_CLIENT_ID:}
+  client-secret: ${NOTION_CLIENT_SECRET:}
+  redirect-uri: ${NOTION_REDIRECT_URI:http://localhost:8080/integrations/notion/callback}
+  authorize-uri: https://api.notion.com/v1/oauth/authorize
+  token-uri: https://api.notion.com/v1/oauth/token
+
+app:
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}

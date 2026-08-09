@@ -290,22 +290,52 @@ paths:
   /projects/{projectId}/integrations/notion:
     post:
       tags: [integrations]
-      summary: Notion 연동 시작
+      summary: Notion 연동 시작 (OAuth 인가 URL 발급)
+      description: 프론트엔드는 응답의 authorizeUrl로 사용자를 리다이렉트시켜 Notion 인가 동의를 받는다.
       parameters:
         - $ref: '#/components/parameters/ProjectId'
       responses:
         '200':
           description: 연동 시작 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotionAuthorizeResponse'
+
+  /integrations/notion/callback:
+    get:
+      tags: [integrations]
+      summary: Notion OAuth 콜백 (Notion이 리다이렉트로 호출, 프론트엔드가 직접 호출하지 않음)
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: true
+          description: 연동 시작 시 전달한 projectId
+          schema:
+            type: string
+      responses:
+        '302':
+          description: 토큰 교환 및 연동 상태 저장 후 프론트엔드로 리다이렉트
 
   /projects/{projectId}/integrations/google-meet:
     post:
       tags: [integrations]
       summary: Google Meet 연동 시작
+      description: Meet 권한은 로그인 시 Google OAuth로 이미 동의받으므로, 별도 인가 없이 프로젝트의 연동 상태만 CONNECTED로 기록한다.
       parameters:
         - $ref: '#/components/parameters/ProjectId'
       responses:
         '200':
           description: 연동 시작 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntegrationStatus'
 
   /projects/{projectId}/integrations/status:
     get:
@@ -533,3 +563,9 @@ components:
         lastSyncedAt:
           type: string
           format: date-time
+
+    NotionAuthorizeResponse:
+      type: object
+      properties:
+        authorizeUrl:
+          type: string
