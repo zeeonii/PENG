@@ -1,19 +1,447 @@
 openapi: 3.0.3
 info:
   title: sixpeng API
-  description: API specification for the sixpeng project
-  version: 0.0.1
+  version: 0.1.0
+  description: |
+    AI 기반 Borderless Teamwork 플랫폼 API.
+
+    이 문서는 **실제 구현된 엔드포인트만** 기술한다.
+    현재 범위: `accounts`, `projects`.
+    `briefings` / `qna` / `translation` / `messages` / `integrations` 는 미구현이라 의도적으로 빠져 있다.
+
+    ## 인증
+    Spring Security 세션 기반이다. 로그인이 끝나면 `JSESSIONID` 쿠키가 내려가고,
+    이후 모든 요청은 이 쿠키로 인증된다.
+
+    쿠키 속성: `HttpOnly; Secure; SameSite=None`
+    → 프론트는 반드시 `fetch(..., { credentials: 'include' })` 로 호출해야 한다.
+
+    ## CSRF
+    `SameSite=None` 이라 SameSite 방어가 없으므로 CSRF 토큰이 켜져 있다.
+    - 서버가 `XSRF-TOKEN` 쿠키를 내려준다 (HttpOnly 아님 → JS 로 읽을 수 있음).
+    - **상태를 바꾸는 요청(POST/PATCH/PUT/DELETE)** 은 그 값을 `X-XSRF-TOKEN` 헤더로 되돌려 보내야 한다.
+    - GET 은 토큰이 필요 없다.
+    - 토큰 없이 보내면 `403`.
+
+    ## CORS
+    `app.cors.allowed-origins` 에 등록된 오리진만 허용하며 `Access-Control-Allow-Credentials: true` 로 응답한다.
+
 servers:
   - url: http://localhost:8080
-    description: Local development server
+    description: 로컬 개발 서버
+
+tags:
+  - name: accounts
+    description: Google 로그인 및 내 프로필
+  - name: projects
+    description: 프로젝트와 참여자
+
 paths:
-  /api/members:
+  /accounts/oauth/google:
     get:
-      summary: List members
-      tags:
-        - member
+      tags: [accounts]
+      summary: Google 로그인 시작
+      description: |
+        Spring Security 의 authorization 엔드포인트(`/oauth2/authorization/google`)로 302 리다이렉트한다.
+        Google 동의가 끝나면 `/login/oauth2/code/google` 콜백에서 세션이 만들어지고,
+        `app.oauth2.success-redirect-uri` 로 다시 리다이렉트된다.
+        **브라우저를 이 URL로 이동시켜야 하며, fetch 로 호출하면 안 된다.**
+      security: []
+      responses:
+        "302":
+          description: 인가 엔드포인트로 리다이렉트
+          headers:
+            Location:
+              schema:
+                type: string
+                example: /oauth2/authorization/google
+
+  /accounts/logout:
+    post:
+      tags: [accounts]
+      summary: 로그아웃
+      description: 세션을 무효화하고 `JSESSIONID` 쿠키를 지운다. `X-XSRF-TOKEN` 헤더가 필요하다.
+      responses:
+        "204":
+          description: 로그아웃 성공
+        "403":
+          $ref: "#/components/responses/CsrfForbidden"
+
+  /accounts/me:
+    get:
+      tags: [accounts]
+      summary: 내 정보 조회
       responses:
         "200":
-          description: OK
+          description: 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    patch:
+      tags: [accounts]
+      summary: 프로필 수정 (언어/국가/타임존/담당업무)
+      description: 보낸 필드만 반영되고, 생략한 필드는 기존 값을 유지한다. 값을 `null` 로 지우는 것은 지원하지 않는다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemberUpdateRequest"
+      responses:
+        "200":
+          description: 수정 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/CsrfForbidden"
+
+  /projects:
+    get:
+      tags: [projects]
+      summary: 내가 참여한 프로젝트 목록
+      description: 최근 생성 순(id 내림차순).
+      responses:
+        "200":
+          description: 조회 성공
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Project"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [projects]
+      summary: 프로젝트 생성
+      description: 생성자는 `role=PM` 으로 참여자에 자동 등록된다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectCreateRequest"
+      responses:
+        "201":
+          description: 생성 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/CsrfForbidden"
+
+  /projects/{projectId}:
+    get:
+      tags: [projects]
+      summary: 프로젝트 상세
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      responses:
+        "200":
+          description: 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/NotParticipant"
+        "404":
+          $ref: "#/components/responses/ProjectNotFound"
+
+  /projects/{projectId}/members:
+    get:
+      tags: [projects]
+      summary: 프로젝트 참여자 목록
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      responses:
+        "200":
+          description: 조회 성공
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProjectMember"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/NotParticipant"
+        "404":
+          $ref: "#/components/responses/ProjectNotFound"
+    post:
+      tags: [projects]
+      summary: 참여자 초대
+      description: |
+        **이미 Google 로그인으로 가입한 회원만** 초대할 수 있다(초대장 테이블이 없음).
+        가입하지 않은 이메일이면 `404 M001`.
+        응답 본문은 없다.
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectMemberInviteRequest"
+      responses:
+        "201":
+          description: 초대 성공 (본문 없음)
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/NotParticipant"
+        "404":
+          description: 프로젝트 또는 초대 대상 회원 없음 (`P001` / `M001`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: 이미 참여 중인 회원 (`P004`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /projects/{projectId}/members/{memberId}:
+    delete:
+      tags: [projects]
+      summary: 참여자 내보내기
+      description: 프로젝트 생성자는 내보낼 수 없다 (`400 P005`).
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "204":
+          description: 삭제 성공
+        "400":
+          description: 생성자는 제거할 수 없음 (`P005`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/NotParticipant"
+        "404":
+          description: 프로젝트 또는 참여자 없음 (`P001` / `P003`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
-  schemas: {}
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: JSESSIONID
+
+  parameters:
+    ProjectId:
+      name: projectId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+
+  responses:
+    Unauthorized:
+      description: 로그인하지 않음 (`C006`)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    BadRequest:
+      description: 입력값이 잘못됨 (`C001`)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    CsrfForbidden:
+      description: CSRF 토큰 누락/불일치 (`C005`)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotParticipant:
+      description: 해당 프로젝트의 참여자가 아님 (`P002`)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ProjectNotFound:
+      description: 프로젝트 없음 (`P001`)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    Member:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        email:
+          type: string
+        name:
+          type: string
+        language:
+          type: string
+          enum: [KR, EN]
+        country:
+          type: string
+          nullable: true
+        timezone:
+          type: string
+          nullable: true
+        duty:
+          type: string
+          nullable: true
+          description: 담당 업무
+      example:
+        id: 1
+        email: e2e@example.com
+        name: 김서연
+        language: KR
+        country: KR
+        timezone: Asia/Seoul
+        duty: 백엔드
+
+    MemberUpdateRequest:
+      type: object
+      description: 모든 필드가 선택값. 생략하면 기존 값 유지.
+      properties:
+        language:
+          type: string
+          enum: [KR, EN]
+        country:
+          type: string
+        timezone:
+          type: string
+        duty:
+          type: string
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        createdBy:
+          type: integer
+          format: int64
+          description: 생성한 회원의 id
+        createdAt:
+          type: string
+          format: date-time
+      example:
+        id: 1
+        name: sixpeng
+        createdBy: 1
+        createdAt: "2026-08-09T22:51:07.260082"
+
+    ProjectCreateRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+
+    ProjectMember:
+      type: object
+      properties:
+        memberId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        role:
+          type: string
+          nullable: true
+          description: PM, Backend, Design 등
+        country:
+          type: string
+          nullable: true
+        timezone:
+          type: string
+          nullable: true
+
+    ProjectMemberInviteRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          description: 이미 가입한 회원의 이메일
+        role:
+          type: string
+          maxLength: 255
+
+    ErrorResponse:
+      type: object
+      description: 모든 에러 응답의 공통 형태
+      properties:
+        code:
+          type: string
+          description: |
+            C001 잘못된 입력 / C005 접근 거부 (CSRF 포함) / C006 미인증
+            M001 회원 없음
+            P001 프로젝트 없음 / P002 참여자 아님 / P003 참여자 없음
+            P004 이미 참여 중 / P005 생성자는 제거 불가
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ErrorDetail"
+      example:
+        code: P002
+        message: Not a participant of the project
+        errors: []
+
+    ErrorDetail:
+      type: object
+      properties:
+        field:
+          type: string
+        value:
+          type: string
+        reason:
+          type: string
+
+security:
+  - sessionCookie: []
