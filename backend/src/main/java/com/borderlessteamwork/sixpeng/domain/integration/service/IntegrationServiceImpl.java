@@ -1,5 +1,8 @@
 package com.borderlessteamwork.sixpeng.domain.integration.service;
 
+import com.borderlessteamwork.sixpeng.domain.document.entity.Document;
+import com.borderlessteamwork.sixpeng.domain.document.entity.DocumentSourceType;
+import com.borderlessteamwork.sixpeng.domain.document.repository.DocumentRepository;
 import com.borderlessteamwork.sixpeng.domain.integration.dto.response.IntegrationStatusResponse;
 import com.borderlessteamwork.sixpeng.domain.integration.dto.response.NotionAuthorizeResponse;
 import com.borderlessteamwork.sixpeng.domain.integration.entity.IntegrationStatus;
@@ -20,7 +23,9 @@ import java.util.List;
 class IntegrationServiceImpl implements IntegrationService {
 
     private final IntegrationStatusRepository integrationStatusRepository;
+    private final DocumentRepository documentRepository;
     private final NotionOAuthClient notionOAuthClient;
+    private final NotionContentClient notionContentClient;
 
     @Value("${app.frontend-url}")
     private String frontendUrl;
@@ -43,7 +48,23 @@ class IntegrationServiceImpl implements IntegrationService {
         integrationStatus.updateNotionConnection(token.accessToken(), token.workspaceId(), token.workspaceName());
         integrationStatusRepository.save(integrationStatus);
 
+        syncNotionDocuments(projectId, token.accessToken());
+
         return frontendUrl + "/projects/" + projectId + "/integrations?connected=notion";
+    }
+
+    /** 연동 시점의 Notion page들을 document로 수집한다. 이후 재동기화(주기적 갱신)는 후속 작업. */
+    private void syncNotionDocuments(Long projectId, String accessToken) {
+        for (NotionPage page : notionContentClient.searchAccessiblePages(accessToken)) {
+            String content = notionContentClient.fetchPageContent(accessToken, page.id());
+
+            Document document = documentRepository
+                    .findByProjectIdAndSourceTypeAndSourceId(projectId, DocumentSourceType.NOTION, page.id())
+                    .orElseGet(() -> Document.collect(
+                            projectId, DocumentSourceType.NOTION, page.id(), page.title(), content, page.url()));
+            document.updateContent(page.title(), content, page.url());
+            documentRepository.save(document);
+        }
     }
 
     @Override

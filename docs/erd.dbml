@@ -3,8 +3,8 @@
 //
 // 구현 상태
 //   구현 완료 : member, project, project_member (실제 생성되는 MySQL 스키마와 일치)
-//               message, integration_status (translation/messages/integrations 담당 구현)
-//   미구현    : document, briefing, briefing_source, qna_history, qna_source
+//               message, integration_status, document (translation/messages/integrations 담당 구현)
+//   미구현    : briefing, briefing_source, qna_history, qna_source
 //               (담당자 작업 예정, 팀 스펙 기준 정의)
 
 Table member {
@@ -74,21 +74,26 @@ Table integration_status {
   Note: 'access_token/workspace_*는 NOTION 연동에서만 사용, GOOGLE_MEET 행은 null'
 }
 
-// ─────────────────────────────────────────────────────────────
-// 이하 미구현
-// ─────────────────────────────────────────────────────────────
-
 Table document {
   id bigint [pk, increment]
   project_id bigint [not null, ref: > project.id]
   source_type varchar [not null, note: 'NOTION 또는 GOOGLE_MEET']
+  source_id varchar [note: '원본 시스템에서의 고유 id (예: Notion page id). 재동기화 시 중복 저장을 막는 기준']
   title varchar
   content text [not null]
   source_url varchar
   collected_at timestamp [not null, default: `now()`]
 
+  indexes {
+    (project_id, source_type, source_id) [unique]
+  }
+
   Note: 'Notion/Google Meet 에서 수집한 원본 데이터. Context Q&A/브리핑의 검색 범위'
 }
+
+// ─────────────────────────────────────────────────────────────
+// 이하 미구현
+// ─────────────────────────────────────────────────────────────
 
 Table briefing {
   id bigint [pk, increment]

@@ -25,6 +25,7 @@ public enum ErrorCode {
 
     NOTION_AUTH_FAILED(HttpStatus.BAD_GATEWAY, "I001", "Notion OAuth authorization failed"),
     INVALID_OAUTH_STATE(HttpStatus.BAD_REQUEST, "I002", "Invalid OAuth state parameter"),
+    NOTION_SYNC_FAILED(HttpStatus.BAD_GATEWAY, "I003", "Notion document sync failed"),
     ;
 
     private final HttpStatus status;
