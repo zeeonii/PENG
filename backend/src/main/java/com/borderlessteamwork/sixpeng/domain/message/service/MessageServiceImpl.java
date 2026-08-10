@@ -4,6 +4,7 @@ import com.borderlessteamwork.sixpeng.domain.message.dto.request.MessageCreateRe
 import com.borderlessteamwork.sixpeng.domain.message.dto.response.MessageResponse;
 import com.borderlessteamwork.sixpeng.domain.message.entity.Message;
 import com.borderlessteamwork.sixpeng.domain.message.repository.MessageRepository;
+import com.borderlessteamwork.sixpeng.domain.project.repository.ProjectMemberRepository;
 import com.borderlessteamwork.sixpeng.domain.translation.dto.request.TranslationRequest;
 import com.borderlessteamwork.sixpeng.domain.translation.service.TranslationService;
 import com.borderlessteamwork.sixpeng.global.exception.BusinessException;
@@ -21,6 +22,7 @@ class MessageServiceImpl implements MessageService {
 
     private final MessageRepository messageRepository;
     private final TranslationService translationService;
+    private final ProjectMemberRepository projectMemberRepository;
 
     @Override
     public List<MessageResponse> getMessages(Long memberId) {
@@ -32,6 +34,10 @@ class MessageServiceImpl implements MessageService {
     @Override
     @Transactional
     public MessageResponse sendMessage(Long senderId, MessageCreateRequest request) {
+        if (!projectMemberRepository.existsByProjectIdAndMemberId(request.getProjectId(), request.getReceiverId())) {
+            throw new BusinessException(ErrorCode.PROJECT_MEMBER_NOT_FOUND);
+        }
+
         String translatedText = translationService.translate(
                 new TranslationRequest(request.getOriginalText(), null, null)
         ).getTranslated();

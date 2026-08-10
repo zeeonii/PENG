@@ -4,6 +4,7 @@ import com.borderlessteamwork.sixpeng.domain.message.dto.request.MessageCreateRe
 import com.borderlessteamwork.sixpeng.domain.message.dto.response.MessageResponse;
 import com.borderlessteamwork.sixpeng.domain.message.entity.Message;
 import com.borderlessteamwork.sixpeng.domain.message.repository.MessageRepository;
+import com.borderlessteamwork.sixpeng.domain.project.repository.ProjectMemberRepository;
 import com.borderlessteamwork.sixpeng.domain.translation.dto.response.TranslationResponse;
 import com.borderlessteamwork.sixpeng.domain.translation.service.TranslationService;
 import com.borderlessteamwork.sixpeng.global.exception.BusinessException;
@@ -33,6 +34,9 @@ class MessageServiceImplTest {
     @Mock
     TranslationService translationService;
 
+    @Mock
+    ProjectMemberRepository projectMemberRepository;
+
     @InjectMocks
     MessageServiceImpl messageService;
 
@@ -55,6 +59,7 @@ class MessageServiceImplTest {
         request.setReceiverId(20L);
         request.setOriginalText("안녕하세요");
 
+        when(projectMemberRepository.existsByProjectIdAndMemberId(1L, 20L)).thenReturn(true);
         when(translationService.translate(any())).thenReturn(TranslationResponse.of("안녕하세요", "Hello"));
         when(messageRepository.save(any(Message.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -65,6 +70,24 @@ class MessageServiceImplTest {
         assertThat(response.getOriginalText()).isEqualTo("안녕하세요");
         assertThat(response.getTranslatedText()).isEqualTo("Hello");
         assertThat(response.isRead()).isFalse();
+    }
+
+    @Test
+    void 받는_사람이_프로젝트를_나갔으면_쪽지를_보낼_수_없다() {
+        MessageCreateRequest request = new MessageCreateRequest();
+        request.setProjectId(1L);
+        request.setReceiverId(20L);
+        request.setOriginalText("안녕하세요");
+
+        when(projectMemberRepository.existsByProjectIdAndMemberId(1L, 20L)).thenReturn(false);
+
+        assertThatThrownBy(() -> messageService.sendMessage(10L, request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.PROJECT_MEMBER_NOT_FOUND));
+
+        verify(messageRepository, never()).save(any());
+        verify(translationService, never()).translate(any());
     }
 
     @Test
