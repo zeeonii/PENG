@@ -3,6 +3,7 @@ package com.borderlessteamwork.sixpeng.domain.message.controller;
 import com.borderlessteamwork.sixpeng.domain.message.dto.request.MessageCreateRequest;
 import com.borderlessteamwork.sixpeng.domain.message.dto.response.MessageResponse;
 import com.borderlessteamwork.sixpeng.domain.message.service.MessageService;
+import com.borderlessteamwork.sixpeng.global.security.CurrentMember;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -12,7 +13,6 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -26,13 +26,13 @@ public class MessageController {
     private final MessageService messageService;
 
     @GetMapping
-    public ResponseEntity<List<MessageResponse>> getMessages(@RequestHeader("X-Member-Id") Long memberId) {
+    public ResponseEntity<List<MessageResponse>> getMessages(@CurrentMember Long memberId) {
         return ResponseEntity.ok(messageService.getMessages(memberId));
     }
 
     @PostMapping
     public ResponseEntity<MessageResponse> sendMessage(
-            @RequestHeader("X-Member-Id") Long memberId,
+            @CurrentMember Long memberId,
             @Valid @RequestBody MessageCreateRequest request
     ) {
         MessageResponse response = messageService.sendMessage(memberId, request);
