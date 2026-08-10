@@ -3,7 +3,10 @@
  * 임시 점(dot)으로 처리되어 있습니다.
  *
  * 사용 예시:
- * <Sidebar /> // MainLayout 안에서 사용, 별도 props 없음
+ * <Sidebar />                    // 사용자 정보 없이 (하단 영역 미표시)
+ * <Sidebar user={currentUser} /> // 로그인 사용자 정보 표시
+ *
+ * user는 { name, role } 형태이며, MainLayout을 통해 전달합니다.
  */
 
 import { Link, useLocation } from "react-router-dom";

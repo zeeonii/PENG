@@ -5,7 +5,7 @@ import Button from "../../../components/Button.jsx";
 import Badge from "../../../components/Badge.jsx";
 import Avatar from "../../../components/Avatar.jsx";
 import Input from "../../../components/Input.jsx";
-import { projects, statusVariant } from "../../../mock/projectData.js";
+import { projects, statusVariant } from "../../../api/mock/projectData.js";
 
 export default function ProjectListPage() {
   const [query, setQuery] = useState(""); const [filter, setFilter] = useState("전체");
