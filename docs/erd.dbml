@@ -1,77 +1,47 @@
+// ERD for sixpeng
+// https://dbml.dbdiagram.io/docs syntax
+//
+// 구현 상태
+//   구현 완료 : member, project, project_member (실제 생성되는 MySQL 스키마와 일치)
+//               message, integration_status (translation/messages/integrations 담당 구현)
+//   미구현    : document, briefing, briefing_source, qna_history, qna_source
+//               (담당자 작업 예정, 팀 스펙 기준 정의)
+
 Table member {
   id bigint [pk, increment]
-  google_id varchar [unique, not null]
-  email varchar [unique, not null]
-  name varchar [not null]
-  language varchar [not null, note: 'KR or EN']
-  country varchar
-  timezone varchar
-  duty varchar [note: '담당 업무']
-  created_at timestamp [not null, default: `now()`]
+  google_id varchar(255) [not null, unique, note: 'Google userinfo 의 sub']
+  email varchar(255) [not null, unique]
+  name varchar(255) [not null]
+  language varchar(10) [not null, note: 'KR 또는 EN. 가입 시 Google locale 로 정하고 이후 사용자가 수정']
+  country varchar(255)
+  timezone varchar(255)
+  duty varchar(255) [note: '담당 업무']
+  created_at datetime(6) [not null]
 
-  Note: '사용자 (Google OAuth 기반)'
+  Note: '사용자(Google OAuth 기반)'
 }
 
 Table project {
   id bigint [pk, increment]
-  name varchar [not null]
+  name varchar(255) [not null]
   created_by bigint [not null, ref: > member.id]
-  created_at timestamp [not null, default: `now()`]
+  created_at datetime(6) [not null]
+
+  Note: '생성자는 만들어질 때 role=PM 으로 project_member 에 함께 등록된다'
 }
 
 Table project_member {
   id bigint [pk, increment]
   project_id bigint [not null, ref: > project.id]
   member_id bigint [not null, ref: > member.id]
-  role varchar [note: 'PM, Backend, Design 등']
-  joined_at timestamp [not null, default: `now()`]
+  role varchar(255) [note: 'PM, Backend, Design 등']
+  joined_at datetime(6) [not null]
 
   indexes {
-    (project_id, member_id) [unique]
+    (project_id, member_id) [unique, name: 'uk_project_member_project_id_member_id']
   }
-}
 
-Table document {
-  id bigint [pk, increment]
-  project_id bigint [not null, ref: > project.id]
-  source_type varchar [not null, note: 'NOTION or GOOGLE_MEET']
-  title varchar
-  content text [not null]
-  source_url varchar
-  collected_at timestamp [not null, default: `now()`]
-
-  Note: 'Notion/Google Meet에서 수집한 원본 데이터, Context Q&A/Briefing 근거로 사용'
-}
-
-Table briefing {
-  id bigint [pk, increment]
-  project_id bigint [not null, ref: > project.id]
-  member_id bigint [not null, ref: > member.id, note: '이 브리핑을 받을 대상자']
-  summary text [not null]
-  created_at timestamp [not null, default: `now()`]
-}
-
-Table briefing_source {
-  id bigint [pk, increment]
-  briefing_id bigint [not null, ref: > briefing.id]
-  document_id bigint [not null, ref: > document.id]
-
-  Note: '브리핑 카드 하단 근거 출처 태그'
-}
-
-Table qna_history {
-  id bigint [pk, increment]
-  project_id bigint [not null, ref: > project.id]
-  member_id bigint [not null, ref: > member.id]
-  question text [not null]
-  answer text [not null]
-  created_at timestamp [not null, default: `now()`]
-}
-
-Table qna_source {
-  id bigint [pk, increment]
-  qna_history_id bigint [not null, ref: > qna_history.id]
-  document_id bigint [not null, ref: > document.id]
+  Note: '프로젝트 참여자. 모든 프로젝트 API 의 접근 권한 판정 기준'
 }
 
 Table message {
@@ -90,8 +60,8 @@ Table message {
 Table integration_status {
   id bigint [pk, increment]
   project_id bigint [not null, ref: > project.id]
-  type varchar [not null, note: 'NOTION or GOOGLE_MEET']
-  status varchar [not null, note: 'CONNECTED or DISCONNECTED']
+  type varchar [not null, note: 'NOTION 또는 GOOGLE_MEET']
+  status varchar [not null, note: 'CONNECTED 또는 DISCONNECTED']
   access_token varchar [note: 'OAuth access token (NOTION 전용, GOOGLE_MEET은 로그인 시 발급된 토큰 재사용)']
   workspace_id varchar [note: 'Notion workspace id (NOTION 전용)']
   workspace_name varchar [note: 'Notion workspace 이름 (NOTION 전용)']
@@ -102,4 +72,51 @@ Table integration_status {
   }
 
   Note: 'access_token/workspace_*는 NOTION 연동에서만 사용, GOOGLE_MEET 행은 null'
+}
+
+// ─────────────────────────────────────────────────────────────
+// 이하 미구현
+// ─────────────────────────────────────────────────────────────
+
+Table document {
+  id bigint [pk, increment]
+  project_id bigint [not null, ref: > project.id]
+  source_type varchar [not null, note: 'NOTION 또는 GOOGLE_MEET']
+  title varchar
+  content text [not null]
+  source_url varchar
+  collected_at timestamp [not null, default: `now()`]
+
+  Note: 'Notion/Google Meet 에서 수집한 원본 데이터. Context Q&A/브리핑의 검색 범위'
+}
+
+Table briefing {
+  id bigint [pk, increment]
+  project_id bigint [not null, ref: > project.id]
+  member_id bigint [not null, ref: > member.id, note: '이 브리핑의 수신자']
+  summary text [not null]
+  created_at timestamp [not null, default: `now()`]
+}
+
+Table briefing_source {
+  id bigint [pk, increment]
+  briefing_id bigint [not null, ref: > briefing.id]
+  document_id bigint [not null, ref: > document.id]
+
+  Note: '브리핑 카드의 근거 문서 태그'
+}
+
+Table qna_history {
+  id bigint [pk, increment]
+  project_id bigint [not null, ref: > project.id]
+  member_id bigint [not null, ref: > member.id]
+  question text [not null]
+  answer text [not null]
+  created_at timestamp [not null, default: `now()`]
+}
+
+Table qna_source {
+  id bigint [pk, increment]
+  qna_history_id bigint [not null, ref: > qna_history.id]
+  document_id bigint [not null, ref: > document.id]
 }

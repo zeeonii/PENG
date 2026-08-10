@@ -2,11 +2,11 @@ name: Backend CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
     paths:
       - "backend/**"
   pull_request:
-    branches: [main]
+    branches: [main, develop]
     paths:
       - "backend/**"
 
@@ -17,6 +17,21 @@ defaults:
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+          MYSQL_DATABASE: sixpeng_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,3 +47,7 @@ jobs:
 
       - name: Build with Gradle
         run: ./gradlew build
+        env:
+          TEST_DB_URL: jdbc:mysql://127.0.0.1:3306/sixpeng_test?characterEncoding=UTF-8&serverTimezone=UTC
+          TEST_DB_USERNAME: root
+          TEST_DB_PASSWORD: ""

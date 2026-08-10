@@ -1,17 +1,32 @@
 spring:
   application:
     name: sixpeng
-
   datasource:
-    url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
-
+    url: ${TEST_DB_URL:jdbc:mysql://localhost:3306/sixpeng_test?characterEncoding=UTF-8&serverTimezone=UTC}
+    username: ${TEST_DB_USERNAME:root}
+    password: ${TEST_DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
       ddl-auto: create-drop
-    database-platform: org.hibernate.dialect.H2Dialect
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: test-client-id
+            client-secret: test-client-secret
+            scope:
+              - profile
+              - email
+
+app:
+  oauth2:
+    success-redirect-uri: http://localhost:5173/oauth/callback
+    failure-redirect-uri: http://localhost:5173/login?error=oauth
+  cors:
+    allowed-origins: http://localhost:5173
+  frontend-url: http://localhost:5173
 
 google:
   translate:
@@ -24,6 +39,3 @@ notion:
   redirect-uri: http://localhost:8080/integrations/notion/callback
   authorize-uri: https://api.notion.com/v1/oauth/authorize
   token-uri: https://api.notion.com/v1/oauth/token
-
-app:
-  frontend-url: http://localhost:5173
