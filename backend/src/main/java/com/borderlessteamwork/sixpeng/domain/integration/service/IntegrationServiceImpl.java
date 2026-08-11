@@ -126,9 +126,13 @@ class IntegrationServiceImpl implements IntegrationService {
                 .toList();
     }
 
+    /** state는 "p{projectId}" 형식으로 발급한다 (순수 숫자 문자열이면 거부하는 provider가 있어 접두사를 붙임). */
     private Long parseProjectId(String state) {
+        if (state == null || !state.startsWith("p")) {
+            throw new BusinessException(ErrorCode.INVALID_OAUTH_STATE);
+        }
         try {
-            return Long.valueOf(state);
+            return Long.valueOf(state.substring(1));
         } catch (NumberFormatException e) {
             throw new BusinessException(ErrorCode.INVALID_OAUTH_STATE);
         }

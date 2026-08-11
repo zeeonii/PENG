@@ -44,7 +44,9 @@ class NotionOAuthClient {
                 .queryParam("response_type", "code")
                 .queryParam("owner", "user")
                 .queryParam("redirect_uri", redirectUri)
-                .queryParam("state", projectId)
+                // Notion이 state 값이 숫자로만 이루어져 있으면 "string이어야 하는데 숫자였다"며 거부해서
+                // 접두사를 붙여 순수 숫자 문자열이 되지 않게 한다.
+                .queryParam("state", "p" + projectId)
                 .encode()
                 .build()
                 .toUriString();

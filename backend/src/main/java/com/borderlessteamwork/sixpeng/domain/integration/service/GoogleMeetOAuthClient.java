@@ -53,7 +53,9 @@ class GoogleMeetOAuthClient {
                 .queryParam("scope", SCOPES)
                 .queryParam("access_type", "offline")
                 .queryParam("prompt", "consent")
-                .queryParam("state", projectId)
+                // Notion 쪽에서 state가 순수 숫자 문자열이면 거부하는 걸 겪어서, 두 provider 모두
+                // 같은 형식(접두사 p)으로 통일해 둔다.
+                .queryParam("state", "p" + projectId)
                 .encode()
                 .build()
                 .toUriString();

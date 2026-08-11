@@ -100,7 +100,7 @@ class IntegrationServiceImplTest {
         when(integrationStatusRepository.save(any(IntegrationStatus.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        String redirectUrl = integrationService.handleNotionCallback("code123", "1", MEMBER_ID);
+        String redirectUrl = integrationService.handleNotionCallback("code123", "p1", MEMBER_ID);
 
         assertThat(redirectUrl).isEqualTo("http://localhost:5173/projects/1/integrations?connected=notion");
     }
@@ -116,7 +116,7 @@ class IntegrationServiceImplTest {
         when(integrationStatusRepository.save(any(IntegrationStatus.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        integrationService.handleNotionCallback("code123", "1", MEMBER_ID);
+        integrationService.handleNotionCallback("code123", "p1", MEMBER_ID);
 
         assertThat(existing.getAccessToken()).isEqualTo("new-token");
         assertThat(existing.getWorkspaceName()).isEqualTo("New Workspace");
@@ -138,7 +138,7 @@ class IntegrationServiceImplTest {
                 .thenReturn(Optional.empty());
         when(documentRepository.save(any(Document.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        integrationService.handleNotionCallback("code123", "1", MEMBER_ID);
+        integrationService.handleNotionCallback("code123", "p1", MEMBER_ID);
 
         ArgumentCaptor<Document> captor = ArgumentCaptor.forClass(Document.class);
         verify(documentRepository, times(1)).save(captor.capture());
@@ -165,7 +165,7 @@ class IntegrationServiceImplTest {
                 .thenReturn(Optional.of(existing));
         when(documentRepository.save(any(Document.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        integrationService.handleNotionCallback("code123", "1", MEMBER_ID);
+        integrationService.handleNotionCallback("code123", "p1", MEMBER_ID);
 
         ArgumentCaptor<Document> captor = ArgumentCaptor.forClass(Document.class);
         verify(documentRepository, times(1)).save(captor.capture());
@@ -210,7 +210,7 @@ class IntegrationServiceImplTest {
         when(integrationStatusRepository.save(any(IntegrationStatus.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        String redirectUrl = integrationService.handleGoogleMeetCallback("code123", "1", MEMBER_ID);
+        String redirectUrl = integrationService.handleGoogleMeetCallback("code123", "p1", MEMBER_ID);
 
         assertThat(redirectUrl).isEqualTo("http://localhost:5173/projects/1/integrations?connected=google-meet");
     }
@@ -233,7 +233,7 @@ class IntegrationServiceImplTest {
                 .thenReturn(Optional.empty());
         when(documentRepository.save(any(Document.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        integrationService.handleGoogleMeetCallback("code123", "1", MEMBER_ID);
+        integrationService.handleGoogleMeetCallback("code123", "p1", MEMBER_ID);
 
         ArgumentCaptor<Document> captor = ArgumentCaptor.forClass(Document.class);
         verify(documentRepository, times(1)).save(captor.capture());
@@ -256,7 +256,7 @@ class IntegrationServiceImplTest {
         when(googleMeetContentClient.fetchTranscriptContent("meet-token", "conferenceRecords/abc"))
                 .thenReturn("");
 
-        integrationService.handleGoogleMeetCallback("code123", "1", MEMBER_ID);
+        integrationService.handleGoogleMeetCallback("code123", "p1", MEMBER_ID);
 
         verify(documentRepository, never()).save(any());
     }
