@@ -13,3 +13,4 @@ Thumbs.db
 !.env.example
 
 # Backend and frontend have their own .gitignore under backend/ and frontend/
+.env
