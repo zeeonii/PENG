@@ -3,6 +3,7 @@ package com.borderlessteamwork.sixpeng.domain.integration.controller;
 import com.borderlessteamwork.sixpeng.domain.integration.dto.response.IntegrationStatusResponse;
 import com.borderlessteamwork.sixpeng.domain.integration.dto.response.NotionAuthorizeResponse;
 import com.borderlessteamwork.sixpeng.domain.integration.service.IntegrationService;
+import com.borderlessteamwork.sixpeng.global.security.CurrentMember;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,28 +23,35 @@ public class IntegrationController {
     private final IntegrationService integrationService;
 
     @PostMapping("/projects/{projectId}/integrations/notion")
-    public ResponseEntity<NotionAuthorizeResponse> startNotionConnection(@PathVariable Long projectId) {
-        return ResponseEntity.ok(integrationService.startNotionConnection(projectId));
+    public ResponseEntity<NotionAuthorizeResponse> startNotionConnection(
+            @CurrentMember Long memberId, @PathVariable Long projectId
+    ) {
+        return ResponseEntity.ok(integrationService.startNotionConnection(projectId, memberId));
     }
 
     @GetMapping("/integrations/notion/callback")
     public ResponseEntity<Void> handleNotionCallback(
+            @CurrentMember Long memberId,
             @RequestParam String code,
             @RequestParam String state
     ) {
-        String redirectUrl = integrationService.handleNotionCallback(code, state);
+        String redirectUrl = integrationService.handleNotionCallback(code, state, memberId);
         return ResponseEntity.status(HttpStatus.FOUND)
                 .location(URI.create(redirectUrl))
                 .build();
     }
 
     @PostMapping("/projects/{projectId}/integrations/google-meet")
-    public ResponseEntity<IntegrationStatusResponse> connectGoogleMeet(@PathVariable Long projectId) {
-        return ResponseEntity.ok(integrationService.connectGoogleMeet(projectId));
+    public ResponseEntity<IntegrationStatusResponse> connectGoogleMeet(
+            @CurrentMember Long memberId, @PathVariable Long projectId
+    ) {
+        return ResponseEntity.ok(integrationService.connectGoogleMeet(projectId, memberId));
     }
 
     @GetMapping("/projects/{projectId}/integrations/status")
-    public ResponseEntity<List<IntegrationStatusResponse>> getStatus(@PathVariable Long projectId) {
-        return ResponseEntity.ok(integrationService.getStatus(projectId));
+    public ResponseEntity<List<IntegrationStatusResponse>> getStatus(
+            @CurrentMember Long memberId, @PathVariable Long projectId
+    ) {
+        return ResponseEntity.ok(integrationService.getStatus(projectId, memberId));
     }
 }

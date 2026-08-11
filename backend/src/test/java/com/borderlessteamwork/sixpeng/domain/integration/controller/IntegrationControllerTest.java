@@ -59,7 +59,7 @@ class IntegrationControllerTest {
     @Test
     @DisplayName("Notion 연동 시작시 인가 URL을 반환한다")
     void Notion_연동_시작시_인가_URL을_반환한다() throws Exception {
-        when(integrationService.startNotionConnection(1L))
+        when(integrationService.startNotionConnection(1L, member.getId()))
                 .thenReturn(NotionAuthorizeResponse.of("https://api.notion.com/v1/oauth/authorize?client_id=x"));
 
         mockMvc.perform(post("/projects/{projectId}/integrations/notion", 1L).with(TestLogin.as(member)))
@@ -77,7 +77,7 @@ class IntegrationControllerTest {
     @Test
     @DisplayName("Notion 콜백은 프론트엔드로 리다이렉트한다")
     void Notion_콜백은_프론트엔드로_리다이렉트한다() throws Exception {
-        when(integrationService.handleNotionCallback("code123", "1"))
+        when(integrationService.handleNotionCallback("code123", "1", member.getId()))
                 .thenReturn("http://localhost:5173/projects/1/integrations?connected=notion");
 
         mockMvc.perform(get("/integrations/notion/callback").with(TestLogin.as(member))
@@ -91,7 +91,7 @@ class IntegrationControllerTest {
     @DisplayName("Google Meet 연동을 시작한다")
     void GoogleMeet_연동을_시작한다() throws Exception {
         IntegrationStatus status = IntegrationStatus.connectGoogleMeet(1L);
-        when(integrationService.connectGoogleMeet(1L)).thenReturn(IntegrationStatusResponse.from(status));
+        when(integrationService.connectGoogleMeet(1L, member.getId())).thenReturn(IntegrationStatusResponse.from(status));
 
         mockMvc.perform(post("/projects/{projectId}/integrations/google-meet", 1L).with(TestLogin.as(member)))
                 .andExpect(status().isOk())
@@ -103,7 +103,7 @@ class IntegrationControllerTest {
     @DisplayName("연동 상태 목록을 조회한다")
     void 연동_상태_목록을_조회한다() throws Exception {
         IntegrationStatus notion = IntegrationStatus.connectNotion(1L, "token", "ws", "Workspace");
-        when(integrationService.getStatus(1L)).thenReturn(List.of(IntegrationStatusResponse.from(notion)));
+        when(integrationService.getStatus(1L, member.getId())).thenReturn(List.of(IntegrationStatusResponse.from(notion)));
 
         mockMvc.perform(get("/projects/{projectId}/integrations/status", 1L).with(TestLogin.as(member)))
                 .andExpect(status().isOk())

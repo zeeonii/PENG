@@ -8,6 +8,7 @@ import com.borderlessteamwork.sixpeng.domain.integration.dto.response.NotionAuth
 import com.borderlessteamwork.sixpeng.domain.integration.entity.IntegrationStatus;
 import com.borderlessteamwork.sixpeng.domain.integration.entity.IntegrationType;
 import com.borderlessteamwork.sixpeng.domain.integration.repository.IntegrationStatusRepository;
+import com.borderlessteamwork.sixpeng.domain.project.repository.ProjectMemberRepository;
 import com.borderlessteamwork.sixpeng.global.exception.BusinessException;
 import com.borderlessteamwork.sixpeng.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ class IntegrationServiceImpl implements IntegrationService {
 
     private final IntegrationStatusRepository integrationStatusRepository;
     private final DocumentRepository documentRepository;
+    private final ProjectMemberRepository projectMemberRepository;
     private final NotionOAuthClient notionOAuthClient;
     private final NotionContentClient notionContentClient;
 
@@ -31,14 +33,16 @@ class IntegrationServiceImpl implements IntegrationService {
     private String frontendUrl;
 
     @Override
-    public NotionAuthorizeResponse startNotionConnection(Long projectId) {
+    public NotionAuthorizeResponse startNotionConnection(Long projectId, Long memberId) {
+        validateParticipant(projectId, memberId);
         return NotionAuthorizeResponse.of(notionOAuthClient.buildAuthorizeUrl(projectId));
     }
 
     @Override
     @Transactional
-    public String handleNotionCallback(String code, String state) {
+    public String handleNotionCallback(String code, String state, Long memberId) {
         Long projectId = parseProjectId(state);
+        validateParticipant(projectId, memberId);
         NotionTokenResponse token = notionOAuthClient.exchangeCodeForToken(code);
 
         IntegrationStatus integrationStatus = integrationStatusRepository
@@ -69,7 +73,8 @@ class IntegrationServiceImpl implements IntegrationService {
 
     @Override
     @Transactional
-    public IntegrationStatusResponse connectGoogleMeet(Long projectId) {
+    public IntegrationStatusResponse connectGoogleMeet(Long projectId, Long memberId) {
+        validateParticipant(projectId, memberId);
         IntegrationStatus integrationStatus = integrationStatusRepository
                 .findByProjectIdAndType(projectId, IntegrationType.GOOGLE_MEET)
                 .orElseGet(() -> IntegrationStatus.connectGoogleMeet(projectId));
@@ -79,7 +84,8 @@ class IntegrationServiceImpl implements IntegrationService {
     }
 
     @Override
-    public List<IntegrationStatusResponse> getStatus(Long projectId) {
+    public List<IntegrationStatusResponse> getStatus(Long projectId, Long memberId) {
+        validateParticipant(projectId, memberId);
         return integrationStatusRepository.findAllByProjectId(projectId).stream()
                 .map(IntegrationStatusResponse::from)
                 .toList();
@@ -90,6 +96,12 @@ class IntegrationServiceImpl implements IntegrationService {
             return Long.valueOf(state);
         } catch (NumberFormatException e) {
             throw new BusinessException(ErrorCode.INVALID_OAUTH_STATE);
+        }
+    }
+
+    private void validateParticipant(Long projectId, Long memberId) {
+        if (!projectMemberRepository.existsByProjectIdAndMemberId(projectId, memberId)) {
+            throw new BusinessException(ErrorCode.PROJECT_ACCESS_DENIED);
         }
     }
 }
