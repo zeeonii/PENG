@@ -8,3 +8,4 @@
 Thumbs.db
 
 # Backend and frontend have their own .gitignore under backend/ and frontend/
+.env
