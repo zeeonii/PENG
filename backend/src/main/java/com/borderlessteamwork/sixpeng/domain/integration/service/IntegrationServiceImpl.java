@@ -12,6 +12,8 @@ import com.borderlessteamwork.sixpeng.domain.project.repository.ProjectMemberRep
 import com.borderlessteamwork.sixpeng.global.exception.BusinessException;
 import com.borderlessteamwork.sixpeng.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +24,8 @@ import java.util.List;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 class IntegrationServiceImpl implements IntegrationService {
+
+    private static final Logger log = LoggerFactory.getLogger(IntegrationServiceImpl.class);
 
     private final IntegrationStatusRepository integrationStatusRepository;
     private final DocumentRepository documentRepository;
@@ -54,7 +58,12 @@ class IntegrationServiceImpl implements IntegrationService {
         integrationStatus.updateNotionConnection(token.accessToken(), token.workspaceId(), token.workspaceName());
         integrationStatusRepository.save(integrationStatus);
 
-        syncNotionDocuments(projectId, token.accessToken());
+        // 문서 수집이 실패해도 연동(토큰 저장) 자체는 유지되어야 한다.
+        try {
+            syncNotionDocuments(projectId, token.accessToken());
+        } catch (Exception e) {
+            log.warn("Notion 문서 수집 실패 (연동 상태는 유지됨): projectId={}", projectId, e);
+        }
 
         return frontendUrl + "/projects/" + projectId + "/integrations?connected=notion";
     }
@@ -92,7 +101,12 @@ class IntegrationServiceImpl implements IntegrationService {
         integrationStatus.updateGoogleMeetConnection(token.accessToken());
         integrationStatusRepository.save(integrationStatus);
 
-        syncGoogleMeetDocuments(projectId, token.accessToken());
+        // 문서 수집이 실패해도 연동(토큰 저장) 자체는 유지되어야 한다.
+        try {
+            syncGoogleMeetDocuments(projectId, token.accessToken());
+        } catch (Exception e) {
+            log.warn("Google Meet 문서 수집 실패 (연동 상태는 유지됨): projectId={}", projectId, e);
+        }
 
         return frontendUrl + "/projects/" + projectId + "/integrations?connected=google-meet";
     }
