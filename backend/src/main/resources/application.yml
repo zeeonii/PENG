@@ -47,8 +47,8 @@ openai:
   api-key: ${OPENAI_API_KEY:}
   model: ${OPENAI_MODEL:gpt-4o-mini}
 
-  chroma:
-    base-url: ${CHROMA_BASE_URL:http://localhost:8000}
+chroma:
+  base-url: ${CHROMA_BASE_URL:http://localhost:8000}
 
 ---
 spring:
