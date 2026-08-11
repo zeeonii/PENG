@@ -2,9 +2,10 @@
 // https://dbml.dbdiagram.io/docs syntax
 //
 // 구현 상태
-//   구현 완료 : member, project, project_member  (실제 생성되는 MySQL 스키마와 일치)
-//   미구현    : document, briefing, briefing_source, qna_history, qna_source,
-//               message, integration_status  (담당자 작업 예정, 팀 스펙 기준 정의)
+//   구현 완료 : member, project, project_member (실제 생성되는 MySQL 스키마와 일치)
+//               message, integration_status, document (translation/messages/integrations 담당 구현)
+//   미구현    : briefing, briefing_source, qna_history, qna_source
+//               (담당자 작업 예정, 팀 스펙 기준 정의)
 
 Table member {
   id bigint [pk, increment]
@@ -43,21 +44,56 @@ Table project_member {
   Note: '프로젝트 참여자. 모든 프로젝트 API 의 접근 권한 판정 기준'
 }
 
-// ─────────────────────────────────────────────────────────────
-// 이하 미구현
-// ─────────────────────────────────────────────────────────────
+Table message {
+  id bigint [pk, increment]
+  project_id bigint [not null, ref: > project.id]
+  sender_id bigint [not null, ref: > member.id]
+  receiver_id bigint [not null, ref: > member.id]
+  original_text text [not null]
+  translated_text text [note: '한-영 자동 변환 결과']
+  is_read boolean [not null, default: false]
+  created_at timestamp [not null, default: `now()`]
+
+  Note: '팀원 간 비동기 쪽지, Cultural Translation 동일 적용'
+}
+
+Table integration_status {
+  id bigint [pk, increment]
+  project_id bigint [not null, ref: > project.id]
+  type varchar [not null, note: 'NOTION 또는 GOOGLE_MEET']
+  status varchar [not null, note: 'CONNECTED 또는 DISCONNECTED']
+  access_token varchar [note: 'OAuth access token (NOTION 전용, GOOGLE_MEET은 로그인 시 발급된 토큰 재사용)']
+  workspace_id varchar [note: 'Notion workspace id (NOTION 전용)']
+  workspace_name varchar [note: 'Notion workspace 이름 (NOTION 전용)']
+  last_synced_at timestamp
+
+  indexes {
+    (project_id, type) [unique]
+  }
+
+  Note: 'access_token/workspace_*는 NOTION 연동에서만 사용, GOOGLE_MEET 행은 null'
+}
 
 Table document {
   id bigint [pk, increment]
   project_id bigint [not null, ref: > project.id]
   source_type varchar [not null, note: 'NOTION 또는 GOOGLE_MEET']
+  source_id varchar [note: '원본 시스템에서의 고유 id (예: Notion page id). 재동기화 시 중복 저장을 막는 기준']
   title varchar
   content text [not null]
   source_url varchar
   collected_at timestamp [not null, default: `now()`]
 
+  indexes {
+    (project_id, source_type, source_id) [unique]
+  }
+
   Note: 'Notion/Google Meet 에서 수집한 원본 데이터. Context Q&A/브리핑의 검색 범위'
 }
+
+// ─────────────────────────────────────────────────────────────
+// 이하 미구현
+// ─────────────────────────────────────────────────────────────
 
 Table briefing {
   id bigint [pk, increment]
@@ -88,29 +124,4 @@ Table qna_source {
   id bigint [pk, increment]
   qna_history_id bigint [not null, ref: > qna_history.id]
   document_id bigint [not null, ref: > document.id]
-}
-
-Table message {
-  id bigint [pk, increment]
-  project_id bigint [not null, ref: > project.id]
-  sender_id bigint [not null, ref: > member.id]
-  receiver_id bigint [not null, ref: > member.id]
-  original_text text [not null]
-  translated_text text [note: '한/영 자동 번역 결과']
-  is_read boolean [not null, default: false]
-  created_at timestamp [not null, default: `now()`]
-
-  Note: '팀원 간 쪽지. Cultural Translation 동일 적용'
-}
-
-Table integration_status {
-  id bigint [pk, increment]
-  project_id bigint [not null, ref: > project.id]
-  type varchar [not null, note: 'NOTION 또는 GOOGLE_MEET']
-  status varchar [not null, note: 'CONNECTED 또는 DISCONNECTED']
-  last_synced_at timestamp
-
-  indexes {
-    (project_id, type) [unique]
-  }
 }
