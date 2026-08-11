@@ -177,7 +177,8 @@ paths:
       tags: [projects]
       summary: 프로젝트 참여자 목록
       description: |
-        사람 팀원과 AI 팀원이 함께 내려온다. AI 팀원은 `role=AI` 로 구분한다.
+        사람 팀원과 AI 팀원이 함께 내려온다.
+        AI 팀원 판별은 `isAiTeammate` 플래그로 한다 (`memberId` 는 환경마다 달라지므로 하드코딩 금지).
       parameters:
         - $ref: "#/components/parameters/ProjectId"
       responses:
@@ -626,6 +627,18 @@ components:
         timezone:
           type: string
           nullable: true
+        isAiTeammate:
+          type: boolean
+          description: |
+            AI 팀원이면 true. **AI 팀원 판별은 반드시 이 필드로 한다.**
+            `memberId` 는 환경(로컬/개발/운영)마다 값이 달라지므로 하드코딩하면 안 된다.
+      example:
+        memberId: 2
+        name: AI 팀원
+        role: AI
+        country: null
+        timezone: null
+        isAiTeammate: true
 
     ProjectMemberInviteRequest:
       type: object

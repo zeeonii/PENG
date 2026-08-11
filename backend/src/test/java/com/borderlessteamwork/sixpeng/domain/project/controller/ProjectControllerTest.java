@@ -19,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -88,9 +89,11 @@ class ProjectControllerTest {
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].memberId").value(owner.getId()))
                 .andExpect(jsonPath("$[0].role").value("PM"))
+                .andExpect(jsonPath("$[0].isAiTeammate").value(false))
                 .andExpect(jsonPath("$[1].memberId").value(aiTeammate.getId()))
                 .andExpect(jsonPath("$[1].name").value("AI 팀원"))
-                .andExpect(jsonPath("$[1].role").value("AI"));
+                .andExpect(jsonPath("$[1].role").value("AI"))
+                .andExpect(jsonPath("$[1].isAiTeammate").value(true));
     }
 
     @Test
@@ -164,7 +167,26 @@ class ProjectControllerTest {
                 .andExpect(jsonPath("$.length()").value(3))
                 .andExpect(jsonPath("$[2].memberId").value(teammate.getId()))
                 .andExpect(jsonPath("$[2].name").value("팀원"))
-                .andExpect(jsonPath("$[2].role").value("Backend"));
+                .andExpect(jsonPath("$[2].role").value("Backend"))
+                .andExpect(jsonPath("$[2].isAiTeammate").value(false));
+    }
+
+    @Test
+    @DisplayName("참여자 목록은 AI 팀원만 isAiTeammate=true 로 내려준다")
+    void memberListMarksOnlyAiTeammate() throws Exception {
+        Project project = createProject("mine", owner);
+        projectMemberRepository.save(ProjectMember.of(project, teammate, "Backend"));
+
+        // 프론트는 id 하드코딩 없이 이 플래그만으로 AI 팀원을 구분할 수 있어야 한다.
+        mockMvc.perform(get("/projects/{id}/members", project.getId()).with(TestLogin.as(owner)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(3)))
+                .andExpect(jsonPath("$[?(@.isAiTeammate == true)]", hasSize(1)))
+                .andExpect(jsonPath("$[?(@.isAiTeammate == false)]", hasSize(2)))
+                .andExpect(jsonPath("$[1].memberId").value(aiTeammate.getId()))
+                .andExpect(jsonPath("$[1].isAiTeammate").value(true))
+                .andExpect(jsonPath("$[0].isAiTeammate").value(false))
+                .andExpect(jsonPath("$[2].isAiTeammate").value(false));
     }
 
     @Test
