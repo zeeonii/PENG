@@ -1,0 +1,26 @@
+spring:
+  datasource:
+    url: ${TEST_DB_URL:jdbc:mysql://localhost:3306/sixpeng_test?characterEncoding=UTF-8&serverTimezone=UTC}
+    username: ${TEST_DB_USERNAME:root}
+    password: ${TEST_DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: test-client-id
+            client-secret: test-client-secret
+            scope:
+              - profile
+              - email
+
+app:
+  oauth2:
+    success-redirect-uri: http://localhost:5173/oauth/callback
+    failure-redirect-uri: http://localhost:5173/login?error=oauth
+  cors:
+    allowed-origins: http://localhost:5173
