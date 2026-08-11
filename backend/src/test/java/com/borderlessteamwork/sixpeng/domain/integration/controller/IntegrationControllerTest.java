@@ -1,7 +1,7 @@
 package com.borderlessteamwork.sixpeng.domain.integration.controller;
 
 import com.borderlessteamwork.sixpeng.domain.integration.dto.response.IntegrationStatusResponse;
-import com.borderlessteamwork.sixpeng.domain.integration.dto.response.NotionAuthorizeResponse;
+import com.borderlessteamwork.sixpeng.domain.integration.dto.response.AuthorizeUrlResponse;
 import com.borderlessteamwork.sixpeng.domain.integration.entity.IntegrationStatus;
 import com.borderlessteamwork.sixpeng.domain.integration.entity.IntegrationType;
 import com.borderlessteamwork.sixpeng.domain.integration.service.IntegrationService;
@@ -60,7 +60,7 @@ class IntegrationControllerTest {
     @DisplayName("Notion 연동 시작시 인가 URL을 반환한다")
     void Notion_연동_시작시_인가_URL을_반환한다() throws Exception {
         when(integrationService.startNotionConnection(1L, member.getId()))
-                .thenReturn(NotionAuthorizeResponse.of("https://api.notion.com/v1/oauth/authorize?client_id=x"));
+                .thenReturn(AuthorizeUrlResponse.of("https://api.notion.com/v1/oauth/authorize?client_id=x"));
 
         mockMvc.perform(post("/projects/{projectId}/integrations/notion", 1L).with(TestLogin.as(member)))
                 .andExpect(status().isOk())
@@ -88,15 +88,27 @@ class IntegrationControllerTest {
     }
 
     @Test
-    @DisplayName("Google Meet 연동을 시작한다")
-    void GoogleMeet_연동을_시작한다() throws Exception {
-        IntegrationStatus status = IntegrationStatus.connectGoogleMeet(1L);
-        when(integrationService.connectGoogleMeet(1L, member.getId())).thenReturn(IntegrationStatusResponse.from(status));
+    @DisplayName("Google Meet 연동 시작시 인가 URL을 반환한다")
+    void GoogleMeet_연동_시작시_인가_URL을_반환한다() throws Exception {
+        when(integrationService.startGoogleMeetConnection(1L, member.getId()))
+                .thenReturn(AuthorizeUrlResponse.of("https://accounts.google.com/o/oauth2/v2/auth?client_id=x"));
 
         mockMvc.perform(post("/projects/{projectId}/integrations/google-meet", 1L).with(TestLogin.as(member)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.type").value("GOOGLE_MEET"))
-                .andExpect(jsonPath("$.status").value("CONNECTED"));
+                .andExpect(jsonPath("$.authorizeUrl").value("https://accounts.google.com/o/oauth2/v2/auth?client_id=x"));
+    }
+
+    @Test
+    @DisplayName("Google Meet 콜백은 프론트엔드로 리다이렉트한다")
+    void GoogleMeet_콜백은_프론트엔드로_리다이렉트한다() throws Exception {
+        when(integrationService.handleGoogleMeetCallback("code123", "1", member.getId()))
+                .thenReturn("http://localhost:5173/projects/1/integrations?connected=google-meet");
+
+        mockMvc.perform(get("/integrations/google-meet/callback").with(TestLogin.as(member))
+                        .param("code", "code123")
+                        .param("state", "1"))
+                .andExpect(status().isFound())
+                .andExpect(header().string("Location", "http://localhost:5173/projects/1/integrations?connected=google-meet"));
     }
 
     @Test

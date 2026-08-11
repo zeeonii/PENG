@@ -71,14 +71,15 @@ public class IntegrationStatus {
         this.lastSyncedAt = LocalDateTime.now();
     }
 
-    public static IntegrationStatus connectGoogleMeet(Long projectId) {
+    public static IntegrationStatus connectGoogleMeet(Long projectId, String accessToken) {
         IntegrationStatus integrationStatus = new IntegrationStatus(projectId, IntegrationType.GOOGLE_MEET);
-        integrationStatus.updateGoogleMeetConnection();
+        integrationStatus.updateGoogleMeetConnection(accessToken);
         return integrationStatus;
     }
 
-    public void updateGoogleMeetConnection() {
+    public void updateGoogleMeetConnection(String accessToken) {
         this.status = IntegrationConnectionStatus.CONNECTED;
+        this.accessToken = accessToken;
         this.lastSyncedAt = LocalDateTime.now();
     }
 }

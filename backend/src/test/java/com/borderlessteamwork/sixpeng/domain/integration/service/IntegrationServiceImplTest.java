@@ -4,7 +4,7 @@ import com.borderlessteamwork.sixpeng.domain.document.entity.Document;
 import com.borderlessteamwork.sixpeng.domain.document.entity.DocumentSourceType;
 import com.borderlessteamwork.sixpeng.domain.document.repository.DocumentRepository;
 import com.borderlessteamwork.sixpeng.domain.integration.dto.response.IntegrationStatusResponse;
-import com.borderlessteamwork.sixpeng.domain.integration.dto.response.NotionAuthorizeResponse;
+import com.borderlessteamwork.sixpeng.domain.integration.dto.response.AuthorizeUrlResponse;
 import com.borderlessteamwork.sixpeng.domain.integration.entity.IntegrationConnectionStatus;
 import com.borderlessteamwork.sixpeng.domain.integration.entity.IntegrationStatus;
 import com.borderlessteamwork.sixpeng.domain.integration.entity.IntegrationType;
@@ -27,6 +27,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -52,6 +53,12 @@ class IntegrationServiceImplTest {
     @Mock
     NotionContentClient notionContentClient;
 
+    @Mock
+    GoogleMeetOAuthClient googleMeetOAuthClient;
+
+    @Mock
+    GoogleMeetContentClient googleMeetContentClient;
+
     @InjectMocks
     IntegrationServiceImpl integrationService;
 
@@ -69,7 +76,7 @@ class IntegrationServiceImplTest {
         asParticipant();
         when(notionOAuthClient.buildAuthorizeUrl(PROJECT_ID)).thenReturn("https://api.notion.com/v1/oauth/authorize?...");
 
-        NotionAuthorizeResponse response = integrationService.startNotionConnection(PROJECT_ID, MEMBER_ID);
+        AuthorizeUrlResponse response = integrationService.startNotionConnection(PROJECT_ID, MEMBER_ID);
 
         assertThat(response.getAuthorizeUrl()).startsWith("https://api.notion.com");
     }
@@ -174,26 +181,84 @@ class IntegrationServiceImplTest {
     }
 
     @Test
-    void 프로젝트_참여자가_아니면_GoogleMeet_연동을_할_수_없다() {
+    void 프로젝트_참여자가_아니면_GoogleMeet_연동을_시작할_수_없다() {
         when(projectMemberRepository.existsByProjectIdAndMemberId(PROJECT_ID, MEMBER_ID)).thenReturn(false);
 
-        assertThatThrownBy(() -> integrationService.connectGoogleMeet(PROJECT_ID, MEMBER_ID))
+        assertThatThrownBy(() -> integrationService.startGoogleMeetConnection(PROJECT_ID, MEMBER_ID))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode()).isEqualTo(ErrorCode.PROJECT_ACCESS_DENIED));
     }
 
     @Test
-    void GoogleMeet_연동시_기존_행이_없으면_새로_생성한다() {
+    void GoogleMeet_연동_시작시_인가_URL을_반환한다() {
         asParticipant();
+        when(googleMeetOAuthClient.buildAuthorizeUrl(PROJECT_ID))
+                .thenReturn("https://accounts.google.com/o/oauth2/v2/auth?...");
+
+        AuthorizeUrlResponse response = integrationService.startGoogleMeetConnection(PROJECT_ID, MEMBER_ID);
+
+        assertThat(response.getAuthorizeUrl()).startsWith("https://accounts.google.com");
+    }
+
+    @Test
+    void GoogleMeet_콜백_처리시_기존_행이_없으면_새로_생성한다() {
+        asParticipant();
+        when(googleMeetOAuthClient.exchangeCodeForToken("code123"))
+                .thenReturn(new GoogleTokenResponse("meet-token"));
         when(integrationStatusRepository.findByProjectIdAndType(PROJECT_ID, IntegrationType.GOOGLE_MEET))
                 .thenReturn(Optional.empty());
         when(integrationStatusRepository.save(any(IntegrationStatus.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        IntegrationStatusResponse response = integrationService.connectGoogleMeet(PROJECT_ID, MEMBER_ID);
+        String redirectUrl = integrationService.handleGoogleMeetCallback("code123", "1", MEMBER_ID);
 
-        assertThat(response.getType()).isEqualTo(IntegrationType.GOOGLE_MEET);
-        assertThat(response.getStatus()).isEqualTo(IntegrationConnectionStatus.CONNECTED);
+        assertThat(redirectUrl).isEqualTo("http://localhost:5173/projects/1/integrations?connected=google-meet");
+    }
+
+    @Test
+    void GoogleMeet_콜백_처리시_회의록이_있으면_document로_수집한다() {
+        asParticipant();
+        when(googleMeetOAuthClient.exchangeCodeForToken("code123"))
+                .thenReturn(new GoogleTokenResponse("meet-token"));
+        when(integrationStatusRepository.findByProjectIdAndType(PROJECT_ID, IntegrationType.GOOGLE_MEET))
+                .thenReturn(Optional.empty());
+        when(integrationStatusRepository.save(any(IntegrationStatus.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(googleMeetContentClient.fetchRecentConferenceRecords("meet-token"))
+                .thenReturn(List.of(new GoogleConferenceRecord("conferenceRecords/abc", "2026-08-11T09:00:00Z")));
+        when(googleMeetContentClient.fetchTranscriptContent("meet-token", "conferenceRecords/abc"))
+                .thenReturn("A: 안녕하세요\nB: 네 안녕하세요\n");
+        when(documentRepository.findByProjectIdAndSourceTypeAndSourceId(
+                PROJECT_ID, DocumentSourceType.GOOGLE_MEET, "conferenceRecords/abc"))
+                .thenReturn(Optional.empty());
+        when(documentRepository.save(any(Document.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        integrationService.handleGoogleMeetCallback("code123", "1", MEMBER_ID);
+
+        ArgumentCaptor<Document> captor = ArgumentCaptor.forClass(Document.class);
+        verify(documentRepository, times(1)).save(captor.capture());
+        Document saved = captor.getValue();
+        assertThat(saved.getContent()).isEqualTo("A: 안녕하세요\nB: 네 안녕하세요\n");
+        assertThat(saved.getSourceType()).isEqualTo(DocumentSourceType.GOOGLE_MEET);
+    }
+
+    @Test
+    void GoogleMeet_콜백_처리시_녹취록이_없는_회의는_document로_수집하지_않는다() {
+        asParticipant();
+        when(googleMeetOAuthClient.exchangeCodeForToken("code123"))
+                .thenReturn(new GoogleTokenResponse("meet-token"));
+        when(integrationStatusRepository.findByProjectIdAndType(PROJECT_ID, IntegrationType.GOOGLE_MEET))
+                .thenReturn(Optional.empty());
+        when(integrationStatusRepository.save(any(IntegrationStatus.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(googleMeetContentClient.fetchRecentConferenceRecords("meet-token"))
+                .thenReturn(List.of(new GoogleConferenceRecord("conferenceRecords/abc", "2026-08-11T09:00:00Z")));
+        when(googleMeetContentClient.fetchTranscriptContent("meet-token", "conferenceRecords/abc"))
+                .thenReturn("");
+
+        integrationService.handleGoogleMeetCallback("code123", "1", MEMBER_ID);
+
+        verify(documentRepository, never()).save(any());
     }
 
     @Test

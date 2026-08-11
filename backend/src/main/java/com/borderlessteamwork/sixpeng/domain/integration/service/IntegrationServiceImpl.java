@@ -3,8 +3,8 @@ package com.borderlessteamwork.sixpeng.domain.integration.service;
 import com.borderlessteamwork.sixpeng.domain.document.entity.Document;
 import com.borderlessteamwork.sixpeng.domain.document.entity.DocumentSourceType;
 import com.borderlessteamwork.sixpeng.domain.document.repository.DocumentRepository;
+import com.borderlessteamwork.sixpeng.domain.integration.dto.response.AuthorizeUrlResponse;
 import com.borderlessteamwork.sixpeng.domain.integration.dto.response.IntegrationStatusResponse;
-import com.borderlessteamwork.sixpeng.domain.integration.dto.response.NotionAuthorizeResponse;
 import com.borderlessteamwork.sixpeng.domain.integration.entity.IntegrationStatus;
 import com.borderlessteamwork.sixpeng.domain.integration.entity.IntegrationType;
 import com.borderlessteamwork.sixpeng.domain.integration.repository.IntegrationStatusRepository;
@@ -28,14 +28,16 @@ class IntegrationServiceImpl implements IntegrationService {
     private final ProjectMemberRepository projectMemberRepository;
     private final NotionOAuthClient notionOAuthClient;
     private final NotionContentClient notionContentClient;
+    private final GoogleMeetOAuthClient googleMeetOAuthClient;
+    private final GoogleMeetContentClient googleMeetContentClient;
 
     @Value("${app.frontend-url}")
     private String frontendUrl;
 
     @Override
-    public NotionAuthorizeResponse startNotionConnection(Long projectId, Long memberId) {
+    public AuthorizeUrlResponse startNotionConnection(Long projectId, Long memberId) {
         validateParticipant(projectId, memberId);
-        return NotionAuthorizeResponse.of(notionOAuthClient.buildAuthorizeUrl(projectId));
+        return AuthorizeUrlResponse.of(notionOAuthClient.buildAuthorizeUrl(projectId));
     }
 
     @Override
@@ -72,15 +74,48 @@ class IntegrationServiceImpl implements IntegrationService {
     }
 
     @Override
-    @Transactional
-    public IntegrationStatusResponse connectGoogleMeet(Long projectId, Long memberId) {
+    public AuthorizeUrlResponse startGoogleMeetConnection(Long projectId, Long memberId) {
         validateParticipant(projectId, memberId);
+        return AuthorizeUrlResponse.of(googleMeetOAuthClient.buildAuthorizeUrl(projectId));
+    }
+
+    @Override
+    @Transactional
+    public String handleGoogleMeetCallback(String code, String state, Long memberId) {
+        Long projectId = parseProjectId(state);
+        validateParticipant(projectId, memberId);
+        GoogleTokenResponse token = googleMeetOAuthClient.exchangeCodeForToken(code);
+
         IntegrationStatus integrationStatus = integrationStatusRepository
                 .findByProjectIdAndType(projectId, IntegrationType.GOOGLE_MEET)
-                .orElseGet(() -> IntegrationStatus.connectGoogleMeet(projectId));
-        integrationStatus.updateGoogleMeetConnection();
+                .orElseGet(() -> IntegrationStatus.connectGoogleMeet(projectId, token.accessToken()));
+        integrationStatus.updateGoogleMeetConnection(token.accessToken());
+        integrationStatusRepository.save(integrationStatus);
 
-        return IntegrationStatusResponse.from(integrationStatusRepository.save(integrationStatus));
+        syncGoogleMeetDocuments(projectId, token.accessToken());
+
+        return frontendUrl + "/projects/" + projectId + "/integrations?connected=google-meet";
+    }
+
+    /**
+     * 연동 시점 기준 최근 회의 기록의 녹취록을 document로 수집한다.
+     * 녹화/받아쓰기가 켜져 있던 회의가 없으면(Workspace 설정, 요금제에 따라) 아무것도 수집되지 않는다.
+     */
+    private void syncGoogleMeetDocuments(Long projectId, String accessToken) {
+        for (GoogleConferenceRecord record : googleMeetContentClient.fetchRecentConferenceRecords(accessToken)) {
+            String content = googleMeetContentClient.fetchTranscriptContent(accessToken, record.name());
+            if (content.isBlank()) {
+                continue;
+            }
+            String title = "Google Meet 회의록 (" + record.startTime() + ")";
+
+            Document document = documentRepository
+                    .findByProjectIdAndSourceTypeAndSourceId(projectId, DocumentSourceType.GOOGLE_MEET, record.name())
+                    .orElseGet(() -> Document.collect(
+                            projectId, DocumentSourceType.GOOGLE_MEET, record.name(), title, content, null));
+            document.updateContent(title, content, null);
+            documentRepository.save(document);
+        }
     }
 
     @Override
