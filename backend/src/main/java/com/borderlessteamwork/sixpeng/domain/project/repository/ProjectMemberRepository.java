@@ -1,0 +1,36 @@
+package com.borderlessteamwork.sixpeng.domain.project.repository;
+
+import com.borderlessteamwork.sixpeng.domain.project.entity.Project;
+import com.borderlessteamwork.sixpeng.domain.project.entity.ProjectMember;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Long> {
+
+    boolean existsByProjectIdAndMemberId(Long projectId, Long memberId);
+
+    Optional<ProjectMember> findByProjectIdAndMemberId(Long projectId, Long memberId);
+
+    // createdBy 는 id 만 쓰므로 프록시 그대로 두고 fetch 하지 않는다.
+    @Query("""
+            select p
+            from ProjectMember pm
+            join pm.project p
+            where pm.member.id = :memberId
+            order by p.id desc
+            """)
+    List<Project> findProjectsByMemberId(@Param("memberId") Long memberId);
+
+    @Query("""
+            select pm
+            from ProjectMember pm
+            join fetch pm.member
+            where pm.project.id = :projectId
+            order by pm.id
+            """)
+    List<ProjectMember> findAllByProjectIdWithMember(@Param("projectId") Long projectId);
+}
