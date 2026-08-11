@@ -43,10 +43,10 @@ app:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
   frontend-url: ${FRONTEND_URL:http://localhost:5173}
 
-google:
-  translate:
-    base-url: https://translation.googleapis.com/language/translate/v2
-    api-key: ${GOOGLE_TRANSLATE_API_KEY:}
+openai:
+  base-url: https://api.openai.com/v1
+  api-key: ${OPENAI_API_KEY:}
+  model: ${OPENAI_MODEL:gpt-4o-mini}
 
 notion:
   client-id: ${NOTION_CLIENT_ID:}

@@ -5,13 +5,13 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-record GoogleTranslateApiResponse(Data data) {
+record OpenAiChatResponse(List<Choice> choices) {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    record Data(List<Translation> translations) {
+    record Choice(Message message) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    record Translation(String translatedText, String detectedSourceLanguage) {
+    record Message(String content) {
     }
 }

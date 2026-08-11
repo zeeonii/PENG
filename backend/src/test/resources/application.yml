@@ -28,10 +28,10 @@ app:
     allowed-origins: http://localhost:5173
   frontend-url: http://localhost:5173
 
-google:
-  translate:
-    base-url: https://translation.googleapis.com/language/translate/v2
-    api-key: test-key
+openai:
+  base-url: https://api.openai.com/v1
+  api-key: test-key
+  model: gpt-4o-mini
 
 notion:
   client-id: test-client-id
