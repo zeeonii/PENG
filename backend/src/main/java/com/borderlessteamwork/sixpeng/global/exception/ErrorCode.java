@@ -12,6 +12,16 @@ public enum ErrorCode {
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "C004", "Method not allowed"),
     ACCESS_DENIED(HttpStatus.FORBIDDEN, "C005", "Access is denied"),
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "C006", "Unauthorized"),
+
+    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "M001", "Member not found"),
+
+    PROJECT_NOT_FOUND(HttpStatus.NOT_FOUND, "P001", "Project not found"),
+    PROJECT_ACCESS_DENIED(HttpStatus.FORBIDDEN, "P002", "Not a participant of the project"),
+    PROJECT_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "P003", "Project member not found"),
+    PROJECT_MEMBER_ALREADY_EXISTS(HttpStatus.CONFLICT, "P004", "Already a member of the project"),
+    PROJECT_OWNER_CANNOT_BE_REMOVED(HttpStatus.BAD_REQUEST, "P005", "Project owner cannot be removed"),
+
+    TRANSLATION_FAILED(HttpStatus.BAD_GATEWAY, "T001", "Translation API call failed"),
     ;
 
     private final HttpStatus status;
