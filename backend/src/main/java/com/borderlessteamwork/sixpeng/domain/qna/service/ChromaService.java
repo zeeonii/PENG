@@ -8,36 +8,52 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ChromaService {
 
+    private static final String TENANT = "default_tenant";
+    private static final String DATABASE = "default_database";
+
     private final WebClient chromaWebClient;
+
+    private final Map<Long, String> collectionIdCache = new ConcurrentHashMap<>();
+
+    private String collectionsBasePath() {
+        return "/api/v2/tenants/" + TENANT + "/databases/" + DATABASE + "/collections";
+    }
 
     private String collectionName(Long projectId) {
         return "project-" + projectId;
     }
 
-    public void ensureCollection(Long projectId) {
-        Map<String, Object> body = Map.of(
-                "name", collectionName(projectId),
-                "get_or_create", true
-        );
+    private String getOrCreateCollectionId(Long projectId) {
+        return collectionIdCache.computeIfAbsent(projectId, id -> {
+            Map<String, Object> body = Map.of(
+                    "name", collectionName(id),
+                    "get_or_create", true
+            );
 
-        chromaWebClient.post()
-                .uri("/api/v1/collections")
-                .bodyValue(body)
-                .retrieve()
-                .toBodilessEntity()
-                .doOnError(e -> log.error("Chroma collection 생성 실패: projectId={}", projectId, e))
-                .block();
+            ChromaCollection collection = chromaWebClient.post()
+                    .uri(collectionsBasePath())
+                    .bodyValue(body)
+                    .retrieve()
+                    .bodyToMono(ChromaCollection.class)
+                    .doOnError(e -> log.error("Chroma collection 생성 실패: projectId={}", id, e))
+                    .block();
+
+            if (collection == null || collection.id() == null) {
+                throw new IllegalStateException("Chroma collection 생성 응답이 비어있습니다: projectId=" + id);
+            }
+            return collection.id();
+        });
     }
 
     public void addEmbedding(Long projectId, Long documentId, String chunkText, List<Double> embedding) {
-        ensureCollection(projectId);
-
+        String collectionId = getOrCreateCollectionId(projectId);
         String chunkId = UUID.randomUUID().toString();
 
         Map<String, Object> body = Map.of(
@@ -48,7 +64,7 @@ public class ChromaService {
         );
 
         chromaWebClient.post()
-                .uri("/api/v1/collections/{name}/add", collectionName(projectId))
+                .uri(collectionsBasePath() + "/{collectionId}/add", collectionId)
                 .bodyValue(body)
                 .retrieve()
                 .toBodilessEntity()
@@ -57,13 +73,15 @@ public class ChromaService {
     }
 
     public List<ChromaQueryResult> query(Long projectId, List<Double> questionEmbedding, int topK) {
+        String collectionId = getOrCreateCollectionId(projectId);
+
         Map<String, Object> body = Map.of(
                 "query_embeddings", List.of(questionEmbedding),
                 "n_results", topK
         );
 
         ChromaQueryResponse response = chromaWebClient.post()
-                .uri("/api/v1/collections/{name}/query", collectionName(projectId))
+                .uri(collectionsBasePath() + "/{collectionId}/query", collectionId)
                 .bodyValue(body)
                 .retrieve()
                 .bodyToMono(ChromaQueryResponse.class)
@@ -86,6 +104,8 @@ public class ChromaService {
     }
 
     public record ChromaQueryResult(String chunkText, Long documentId) {}
+
+    private record ChromaCollection(String id, String name) {}
 
     private record ChromaQueryResponse(
             List<List<String>> documents,
