@@ -39,7 +39,7 @@ public class BriefingDetailResponse {
             return SourceItem.builder()
                     .documentId(document.getId())
                     .title(document.getTitle())
-                    .sourceType(document.getSourceType())
+                    .sourceType(document.getSourceType().name())
                     .sourceUrl(document.getSourceUrl())
                     .build();
         }
