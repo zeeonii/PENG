@@ -63,7 +63,10 @@ class AccountControllerTest {
                 .andExpect(jsonPath("$.id").value(me.getId()))
                 .andExpect(jsonPath("$.email").value("me@example.com"))
                 .andExpect(jsonPath("$.name").value("서연"))
-                .andExpect(jsonPath("$.language").value("KR"));
+                .andExpect(jsonPath("$.language").value("KR"))
+                // 번역 표시 토글은 기본 둘 다 켜짐
+                .andExpect(jsonPath("$.showOriginalText").value(true))
+                .andExpect(jsonPath("$.showTranslatedText").value(true));
     }
 
     @Test
@@ -100,6 +103,73 @@ class AccountControllerTest {
                                 """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("C001"));
+    }
+
+    @Test
+    @DisplayName("번역 표시 토글은 한쪽만 끄면 정상 반영된다")
+    void updateTranslationDisplayToggle() throws Exception {
+        mockMvc.perform(patch("/accounts/me").with(TestLogin.as(me))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"showOriginalText": false}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.showOriginalText").value(false))
+                .andExpect(jsonPath("$.showTranslatedText").value(true));
+    }
+
+    @Test
+    @DisplayName("두 토글을 한 번에 모두 끄면 400 이다")
+    void rejectsTurningOffBothToggles() throws Exception {
+        mockMvc.perform(patch("/accounts/me").with(TestLogin.as(me))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"showOriginalText": false, "showTranslatedText": false}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("M003"));
+    }
+
+    @Test
+    @DisplayName("이미 한쪽이 꺼져 있으면 나머지 한쪽만 끄는 요청도 400 이다")
+    void rejectsTurningOffLastEnabledToggle() throws Exception {
+        mockMvc.perform(patch("/accounts/me").with(TestLogin.as(me))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"showTranslatedText": false}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.showTranslatedText").value(false));
+
+        // 생략한 showTranslatedText 는 기존 값(false)이 유지되므로 둘 다 false 가 된다
+        mockMvc.perform(patch("/accounts/me").with(TestLogin.as(me))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"showOriginalText": false}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("M003"));
+    }
+
+    @Test
+    @DisplayName("토글을 건드리지 않는 수정은 기존 토글 값을 유지한다")
+    void keepsTogglesWhenNotSpecified() throws Exception {
+        mockMvc.perform(patch("/accounts/me").with(TestLogin.as(me))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"showOriginalText": false}
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(patch("/accounts/me").with(TestLogin.as(me))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"duty": "백엔드"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.duty").value("백엔드"))
+                .andExpect(jsonPath("$.showOriginalText").value(false))
+                .andExpect(jsonPath("$.showTranslatedText").value(true));
     }
 
     @Test

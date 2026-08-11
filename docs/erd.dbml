@@ -16,9 +16,19 @@ Table member {
   country varchar(255)
   timezone varchar(255)
   duty varchar(255) [note: '담당 업무']
+  show_original_text boolean [not null, default: true, note: '요구사항 5-3/5-7 번역 표시 토글']
+  show_translated_text boolean [not null, default: true, note: '둘 다 false 인 상태는 허용하지 않는다']
   created_at datetime(6) [not null]
 
-  Note: '사용자(Google OAuth 기반)'
+  Note: '''
+    사용자(Google OAuth 기반).
+
+    AI 팀원은 Google 로그인 없이 애플리케이션 시작 시 시딩되는 특수 행이다.
+      google_id = 'SYSTEM_AI_TEAMMATE'  (예약값, 조회 기준)
+      email     = 'ai@sixpeng.internal'
+      name      = 'AI 팀원'
+    다른 도메인(qna, briefing 등)에서 'AI 가 한 일'을 표시할 때 이 google_id 로 조회한다.
+  '''
 }
 
 Table project {
@@ -27,21 +37,24 @@ Table project {
   created_by bigint [not null, ref: > member.id]
   created_at datetime(6) [not null]
 
-  Note: '생성자는 만들어질 때 role=PM 으로 project_member 에 함께 등록된다'
+  Note: '생성자는 만들어질 때 role=PM 으로, AI 팀원은 role=AI 로 project_member 에 함께 등록된다'
 }
 
 Table project_member {
   id bigint [pk, increment]
   project_id bigint [not null, ref: > project.id]
   member_id bigint [not null, ref: > member.id]
-  role varchar(255) [note: 'PM, Backend, Design 등']
+  role varchar(255) [note: 'PM, Backend, Design 등. AI 팀원은 AI 고정']
   joined_at datetime(6) [not null]
 
   indexes {
     (project_id, member_id) [unique, name: 'uk_project_member_project_id_member_id']
   }
 
-  Note: '프로젝트 참여자. 모든 프로젝트 API 의 접근 권한 판정 기준'
+  Note: '''
+    프로젝트 참여자. 모든 프로젝트 API 의 접근 권한 판정 기준.
+    프로젝트 생성자(role=PM)와 AI 팀원(role=AI)은 참여자에서 제거할 수 없다.
+  '''
 }
 
 Table message {

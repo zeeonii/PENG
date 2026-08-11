@@ -11,6 +11,7 @@ import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -22,6 +23,15 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Member {
+
+    /**
+     * AI 팀원 계정을 찾는 기준값. Google 로그인으로는 절대 나올 수 없는 예약어라
+     * 실제 사용자 계정과 충돌하지 않는다. 다른 도메인(qna, briefing 등)에서
+     * 'AI 가 한 일'을 표시할 때 이 값으로 회원을 조회하면 된다.
+     */
+    public static final String AI_TEAMMATE_GOOGLE_ID = "SYSTEM_AI_TEAMMATE";
+    public static final String AI_TEAMMATE_EMAIL = "ai@sixpeng.internal";
+    public static final String AI_TEAMMATE_NAME = "AI 팀원";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -49,6 +59,18 @@ public class Member {
     /** 담당 업무 */
     private String duty;
 
+    /**
+     * 번역 표시 토글. 둘 다 false 인 상태는 허용하지 않는다.
+     * ColumnDefault 가 있어야 ddl-auto 가 컬럼을 추가할 때 기존 행이 false 로 채워지지 않는다.
+     */
+    @ColumnDefault("true")
+    @Column(name = "show_original_text", nullable = false)
+    private boolean showOriginalText = true;
+
+    @ColumnDefault("true")
+    @Column(name = "show_translated_text", nullable = false)
+    private boolean showTranslatedText = true;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -64,14 +86,27 @@ public class Member {
         return new Member(googleId, email, name, language);
     }
 
+    /** 로그인 없이 시스템이 심어두는 AI 팀원 계정. */
+    public static Member ofAiTeammate() {
+        return new Member(AI_TEAMMATE_GOOGLE_ID, AI_TEAMMATE_EMAIL, AI_TEAMMATE_NAME, Language.EN);
+    }
+
+    public boolean isAiTeammate() {
+        return AI_TEAMMATE_GOOGLE_ID.equals(googleId);
+    }
+
     /** 재로그인 시 Google 쪽에서 바뀐 값을 반영한다. */
     public void syncGoogleProfile(String email, String name) {
         this.email = email;
         this.name = name;
     }
 
-    /** PATCH 시맨틱: null 인 필드는 변경하지 않는다. */
-    public void updateProfile(Language language, String country, String timezone, String duty) {
+    /**
+     * PATCH 시맨틱: null 인 필드는 변경하지 않는다.
+     * 번역 표시 토글은 호출 전에 서비스에서 최종값을 계산·검증해 넘긴다.
+     */
+    public void updateProfile(Language language, String country, String timezone, String duty,
+                              boolean showOriginalText, boolean showTranslatedText) {
         if (language != null) {
             this.language = language;
         }
@@ -84,5 +119,7 @@ public class Member {
         if (duty != null) {
             this.duty = duty;
         }
+        this.showOriginalText = showOriginalText;
+        this.showTranslatedText = showTranslatedText;
     }
 }

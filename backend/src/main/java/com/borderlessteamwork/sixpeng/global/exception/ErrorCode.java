@@ -14,12 +14,16 @@ public enum ErrorCode {
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "C006", "Unauthorized"),
 
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "M001", "Member not found"),
+    AI_TEAMMATE_NOT_INITIALIZED(HttpStatus.INTERNAL_SERVER_ERROR, "M002", "AI teammate account is not initialized"),
+    INVALID_TRANSLATION_DISPLAY_SETTING(HttpStatus.BAD_REQUEST, "M003",
+            "At least one of original/translated text must be shown"),
 
     PROJECT_NOT_FOUND(HttpStatus.NOT_FOUND, "P001", "Project not found"),
     PROJECT_ACCESS_DENIED(HttpStatus.FORBIDDEN, "P002", "Not a participant of the project"),
     PROJECT_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "P003", "Project member not found"),
     PROJECT_MEMBER_ALREADY_EXISTS(HttpStatus.CONFLICT, "P004", "Already a member of the project"),
     PROJECT_OWNER_CANNOT_BE_REMOVED(HttpStatus.BAD_REQUEST, "P005", "Project owner cannot be removed"),
+    PROJECT_AI_TEAMMATE_CANNOT_BE_REMOVED(HttpStatus.BAD_REQUEST, "P006", "AI teammate cannot be removed"),
 
     TRANSLATION_FAILED(HttpStatus.BAD_GATEWAY, "T001", "Translation API call failed"),
     ;

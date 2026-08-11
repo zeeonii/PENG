@@ -45,23 +45,30 @@ class ProjectControllerTest {
     private Member owner;
     private Member teammate;
     private Member outsider;
+    private Member aiTeammate;
 
     @BeforeEach
     void setUp() {
         owner = memberRepository.save(Member.ofGoogle("g-owner", "owner@example.com", "오너", Language.KR));
         teammate = memberRepository.save(Member.ofGoogle("g-mate", "mate@example.com", "팀원", Language.EN));
         outsider = memberRepository.save(Member.ofGoogle("g-out", "out@example.com", "외부인", Language.EN));
+        // 시딩은 컨텍스트 시작 시 한 번 일어나는데 컨텍스트가 여러 개라 create-drop 순서에 따라
+        // 사라질 수 있다. 테스트가 그 순서에 기대지 않도록 여기서 확보한다.
+        aiTeammate = memberRepository.findByGoogleId(Member.AI_TEAMMATE_GOOGLE_ID)
+                .orElseGet(() -> memberRepository.save(Member.ofAiTeammate()));
     }
 
+    /** POST /projects 와 같은 모양(생성자 + AI 팀원)으로 프로젝트를 만든다. */
     private Project createProject(String name, Member creator) {
         Project project = projectRepository.save(Project.of(name, creator));
         projectMemberRepository.save(ProjectMember.of(project, creator, "PM"));
+        projectMemberRepository.save(ProjectMember.of(project, aiTeammate, "AI"));
         return project;
     }
 
     @Test
-    @DisplayName("프로젝트를 만들면 201 과 함께 생성자가 참여자로 등록된다")
-    void createProject() throws Exception {
+    @DisplayName("프로젝트를 만들면 생성자와 AI 팀원이 함께 참여자로 등록된다")
+    void createProjectAutoJoinsOwnerAndAiTeammate() throws Exception {
         mockMvc.perform(post("/projects").with(TestLogin.as(owner))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -74,6 +81,16 @@ class ProjectControllerTest {
 
         Project created = projectRepository.findAll().getFirst();
         assertThat(projectMemberRepository.existsByProjectIdAndMemberId(created.getId(), owner.getId())).isTrue();
+        assertThat(projectMemberRepository.existsByProjectIdAndMemberId(created.getId(), aiTeammate.getId())).isTrue();
+
+        mockMvc.perform(get("/projects/{id}/members", created.getId()).with(TestLogin.as(owner)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].memberId").value(owner.getId()))
+                .andExpect(jsonPath("$[0].role").value("PM"))
+                .andExpect(jsonPath("$[1].memberId").value(aiTeammate.getId()))
+                .andExpect(jsonPath("$[1].name").value("AI 팀원"))
+                .andExpect(jsonPath("$[1].role").value("AI"));
     }
 
     @Test
@@ -141,12 +158,13 @@ class ProjectControllerTest {
                                 """))
                 .andExpect(status().isCreated());
 
+        // 생성자 + AI 팀원 + 초대된 팀원
         mockMvc.perform(get("/projects/{id}/members", project.getId()).with(TestLogin.as(owner)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[1].memberId").value(teammate.getId()))
-                .andExpect(jsonPath("$[1].name").value("팀원"))
-                .andExpect(jsonPath("$[1].role").value("Backend"));
+                .andExpect(jsonPath("$.length()").value(3))
+                .andExpect(jsonPath("$[2].memberId").value(teammate.getId()))
+                .andExpect(jsonPath("$[2].name").value("팀원"))
+                .andExpect(jsonPath("$[2].role").value("Backend"));
     }
 
     @Test
@@ -199,6 +217,19 @@ class ProjectControllerTest {
                         .with(TestLogin.as(owner)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("P005"));
+    }
+
+    @Test
+    @DisplayName("AI 팀원은 내보낼 수 없다")
+    void cannotRemoveAiTeammate() throws Exception {
+        Project project = createProject("mine", owner);
+
+        mockMvc.perform(delete("/projects/{id}/members/{memberId}", project.getId(), aiTeammate.getId())
+                        .with(TestLogin.as(owner)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("P006"));
+
+        assertThat(projectMemberRepository.existsByProjectIdAndMemberId(project.getId(), aiTeammate.getId())).isTrue();
     }
 
     @Test

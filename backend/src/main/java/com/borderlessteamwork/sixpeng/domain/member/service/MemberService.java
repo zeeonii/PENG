@@ -23,6 +23,15 @@ public class MemberService {
     }
 
     /**
+     * AI 팀원 계정을 가져온다. 애플리케이션 시작 시 시딩되므로 없으면 초기화 실패다.
+     * qna, briefing 등 'AI 가 한 일'을 회원으로 표시해야 하는 도메인에서 사용한다.
+     */
+    public Member findAiTeammate() {
+        return memberRepository.findByGoogleId(Member.AI_TEAMMATE_GOOGLE_ID)
+                .orElseThrow(() -> new BusinessException(ErrorCode.AI_TEAMMATE_NOT_INITIALIZED));
+    }
+
+    /**
      * Google 로그인 결과로 회원을 등록하거나, 이미 있으면 프로필을 갱신한다.
      * 언어는 최초 가입 시에만 locale 로 정하고, 이후에는 사용자가 수정한 값을 유지한다.
      */
@@ -39,7 +48,24 @@ public class MemberService {
     @Transactional
     public Member updateProfile(Long memberId, MemberUpdateRequest request) {
         Member member = findById(memberId);
-        member.updateProfile(request.language(), request.country(), request.timezone(), request.duty());
+
+        // 생략한 필드는 기존 값을 유지하므로, 적용 후의 최종 상태로 검증해야 한다.
+        boolean showOriginalText = request.showOriginalText() != null
+                ? request.showOriginalText() : member.isShowOriginalText();
+        boolean showTranslatedText = request.showTranslatedText() != null
+                ? request.showTranslatedText() : member.isShowTranslatedText();
+        if (!showOriginalText && !showTranslatedText) {
+            throw new BusinessException(ErrorCode.INVALID_TRANSLATION_DISPLAY_SETTING);
+        }
+
+        member.updateProfile(
+                request.language(),
+                request.country(),
+                request.timezone(),
+                request.duty(),
+                showOriginalText,
+                showTranslatedText
+        );
         return member;
     }
 }
