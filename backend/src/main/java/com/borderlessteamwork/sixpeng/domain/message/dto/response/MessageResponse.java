@@ -17,7 +17,7 @@ public class MessageResponse {
     private final String translatedText;
 
     @JsonProperty("isRead")
-    private final boolean isRead;
+    private final boolean read;
 
     private final LocalDateTime createdAt;
 
@@ -28,7 +28,7 @@ public class MessageResponse {
         this.receiverId = message.getReceiverId();
         this.originalText = message.getOriginalText();
         this.translatedText = message.getTranslatedText();
-        this.isRead = message.isRead();
+        this.read = message.isRead();
         this.createdAt = message.getCreatedAt();
     }
 
