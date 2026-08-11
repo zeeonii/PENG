@@ -45,6 +45,7 @@ class NotionOAuthClient {
                 .queryParam("owner", "user")
                 .queryParam("redirect_uri", redirectUri)
                 .queryParam("state", projectId)
+                .encode()
                 .build()
                 .toUriString();
     }

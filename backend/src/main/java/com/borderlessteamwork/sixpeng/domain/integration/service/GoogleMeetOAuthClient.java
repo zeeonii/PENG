@@ -54,6 +54,7 @@ class GoogleMeetOAuthClient {
                 .queryParam("access_type", "offline")
                 .queryParam("prompt", "consent")
                 .queryParam("state", projectId)
+                .encode()
                 .build()
                 .toUriString();
     }
