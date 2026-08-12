@@ -22,6 +22,12 @@ public enum ErrorCode {
     PROJECT_OWNER_CANNOT_BE_REMOVED(HttpStatus.BAD_REQUEST, "P005", "Project owner cannot be removed"),
 
     TRANSLATION_FAILED(HttpStatus.BAD_GATEWAY, "T001", "Translation API call failed"),
+
+    NOTION_AUTH_FAILED(HttpStatus.BAD_GATEWAY, "I001", "Notion OAuth authorization failed"),
+    INVALID_OAUTH_STATE(HttpStatus.BAD_REQUEST, "I002", "Invalid OAuth state parameter"),
+    NOTION_SYNC_FAILED(HttpStatus.BAD_GATEWAY, "I003", "Notion document sync failed"),
+    GOOGLE_MEET_AUTH_FAILED(HttpStatus.BAD_GATEWAY, "I004", "Google Meet OAuth authorization failed"),
+    GOOGLE_MEET_SYNC_FAILED(HttpStatus.BAD_GATEWAY, "I005", "Google Meet document sync failed"),
     ;
 
     private final HttpStatus status;
