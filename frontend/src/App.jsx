@@ -13,6 +13,7 @@ export default function App() {
       <Route path="/home" element={<HomePage />} />
       <Route path="/projects" element={<ProjectListPage />} />
       <Route path="/projects/new" element={<ProjectCreatePage />} />
+      <Route path="/projects/:projectId/edit" element={<ProjectCreatePage />} />
       <Route path="/projects/:projectId" element={<ProjectHomePage />} />
       <Route path="/notes" element={<NotePage />} />
       <Route path="*" element={<Navigate to="/login" replace />} />

@@ -8,7 +8,7 @@
  */
 
 const VARIANT_STYLES = {
-  primary: "bg-primary text-white hover:opacity-90",
+  primary: "bg-primary text-accent hover:bg-primary-dark",
   secondary:
     "bg-white text-primary border border-border hover:bg-secondary",
 };
