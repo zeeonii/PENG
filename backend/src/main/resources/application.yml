@@ -60,6 +60,9 @@ google-meet:
   authorize-uri: https://accounts.google.com/o/oauth2/v2/auth
   token-uri: https://oauth2.googleapis.com/token
 
+chroma:
+  base-url: ${CHROMA_BASE_URL:http://localhost:8000}
+
 ---
 spring:
   config:

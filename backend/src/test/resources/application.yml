@@ -44,3 +44,6 @@ google-meet:
   redirect-uri: http://localhost:8080/integrations/google-meet/callback
   authorize-uri: https://accounts.google.com/o/oauth2/v2/auth
   token-uri: https://oauth2.googleapis.com/token
+
+chroma:
+  base-url: http://localhost:8000
