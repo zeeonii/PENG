@@ -12,9 +12,9 @@ Table member {
   google_id varchar(255) [not null, unique, note: 'Google userinfo 의 sub']
   email varchar(255) [not null, unique]
   name varchar(255) [not null]
-  language varchar(10) [not null, note: 'KR 또는 EN. 가입 시 Google locale 로 정하고 이후 사용자가 수정']
-  country varchar(255)
-  timezone varchar(255)
+  language varchar(10) [not null, note: 'KR 또는 EN. 가입 시 Google locale 로 정하며, 판별 불가 시 기본값 EN (요구사항 5-7)']
+  country varchar(255) [note: 'Google 이 주지 않아 기본값 없이 비워 둔다. 사용자가 프로필에서 채운다']
+  timezone varchar(255) [default: 'UTC', note: '미설정 시 시스템 기본값 UTC (요구사항 5-7)']
   duty varchar(255) [note: '담당 업무']
   show_original_text boolean [not null, default: true, note: '요구사항 5-3/5-7 번역 표시 토글']
   show_translated_text boolean [not null, default: true, note: '둘 다 false 인 상태는 허용하지 않는다']

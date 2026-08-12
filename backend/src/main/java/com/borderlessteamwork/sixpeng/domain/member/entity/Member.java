@@ -33,6 +33,13 @@ public class Member {
     public static final String AI_TEAMMATE_EMAIL = "ai@sixpeng.internal";
     public static final String AI_TEAMMATE_NAME = "AI 팀원";
 
+    /**
+     * 요구사항 5-7: 미설정 시 시스템 기본값. Google 은 timezone 을 주지 않으므로
+     * 가입 시점에는 항상 이 값이 들어가고, 사용자가 프로필에서 바꾸면 그 값이 유지된다.
+     * 언어 기본값(EN)은 {@link Language#fromLocale(String)} 이 담당한다.
+     */
+    public static final String DEFAULT_TIMEZONE = "UTC";
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -52,9 +59,11 @@ public class Member {
     @Column(nullable = false, length = 10)
     private Language language;
 
+    /** Google 이 국가 정보를 주지 않아 기본값 없이 비워 둔다. 사용자가 프로필에서 채운다. */
     private String country;
 
-    private String timezone;
+    @ColumnDefault("'" + DEFAULT_TIMEZONE + "'")
+    private String timezone = DEFAULT_TIMEZONE;
 
     /** 담당 업무 */
     private String duty;

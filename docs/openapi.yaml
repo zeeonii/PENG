@@ -529,12 +529,14 @@ components:
         language:
           type: string
           enum: [KR, EN]
+          description: 가입 시 Google locale 로 판정하며, 판별할 수 없으면 기본값 `EN`
         country:
           type: string
           nullable: true
+          description: Google 이 주지 않으므로 사용자가 설정하기 전까지 `null`
         timezone:
           type: string
-          nullable: true
+          description: 가입 시 시스템 기본값 `UTC` 로 채워진다
         duty:
           type: string
           nullable: true
