@@ -19,9 +19,14 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Component
 class GoogleMeetOAuthClient {
 
+    /**
+     * drive.meet.readonly로는 녹취록이 export된 Google Docs 파일을 Drive API로 읽으려 하면
+     * 404가 발생함을 실제 연동 테스트로 확인했다 (권한이 있어도 일반 Drive 엔드포인트는 막혀 있는 것으로 보임).
+     * entries API가 비어 있을 때 Docs API로 직접 읽기 위해 documents.readonly로 교체한다.
+     */
     private static final String SCOPES = String.join(" ",
             "https://www.googleapis.com/auth/meetings.space.readonly",
-            "https://www.googleapis.com/auth/drive.meet.readonly"
+            "https://www.googleapis.com/auth/documents.readonly"
     );
 
     private final WebClient webClient;
