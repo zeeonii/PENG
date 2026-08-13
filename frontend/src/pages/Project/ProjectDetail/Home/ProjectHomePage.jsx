@@ -4,7 +4,11 @@ import Avatar from "../../../../components/Avatar.jsx";
 import Badge from "../../../../components/Badge.jsx";
 import Button from "../../../../components/Button.jsx";
 import Tab from "../../../../components/Tab.jsx";
-import { projects, statusVariant } from "../../../../mock/projectData.js";
+import BriefingTab from "../Briefing/BriefingTab.jsx";
+import QnATab from "../QnA/QnATab.jsx";
+import MembersTab from "../Members/MembersTab.jsx";
+import IntegrationTab from "../Integration/IntegrationTab.jsx";
+import { projects, statusVariant } from "../../../../api/mock/projectData.js";
 
 function ProjectOverview({ project }) {
   return (
@@ -55,14 +59,6 @@ function ProjectOverview({ project }) {
   );
 }
 
-function EmptyTab({ label }) {
-  return (
-    <div className="rounded-xl border border-dashed border-border px-5 py-10 text-center text-sm text-muted">
-      {label} 화면은 담당 기능과 연결될 예정입니다.
-    </div>
-  );
-}
-
 export default function ProjectHomePage() {
   const { projectId } = useParams();
   const project = projects.find((item) => item.id === projectId) ?? projects[0];
@@ -88,10 +84,10 @@ export default function ProjectHomePage() {
         <Tab
           tabs={[
             { label: "홈", content: <ProjectOverview project={project} /> },
-            { label: "AI 브리핑 상세", content: <EmptyTab label="AI 브리핑 상세" /> },
-            { label: "컨텍스트 Q&A", content: <EmptyTab label="컨텍스트 Q&A" /> },
-            { label: "팀원 관리", content: <EmptyTab label="팀원 관리" /> },
-            { label: "연동 상태", content: <EmptyTab label="연동 상태" /> },
+            { label: "AI 브리핑 상세", content: <BriefingTab /> },
+            { label: "컨텍스트 Q&A", content: <QnATab /> },
+            { label: "팀원 관리", content: <MembersTab /> },
+            { label: "연동 상태", content: <IntegrationTab /> },
           ]}
         />
       </div>

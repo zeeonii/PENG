@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import MainLayout from "../../layouts/MainLayout.jsx";
 import Avatar from "../../components/Avatar.jsx";
 import Badge from "../../components/Badge.jsx";
-import { projects, statusVariant } from "../../mock/projectData.js";
+import { projects, statusVariant } from "../../api/mock/projectData.js";
 
 export default function HomePage() {
   return (

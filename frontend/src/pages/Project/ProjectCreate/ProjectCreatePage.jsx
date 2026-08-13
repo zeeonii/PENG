@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import MainLayout from "../../../layouts/MainLayout.jsx";
 import Button from "../../../components/Button.jsx";
 import Input from "../../../components/Input.jsx";
-import { createProject, projects, saveProject } from "../../../mock/projectData.js";
+import { createProject, projects, saveProject } from "../../../api/mock/projectData.js";
 
 const emptyMember = { email: "", country: "대한민국", timezone: "GMT+9 서울" };
 

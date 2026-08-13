@@ -5,7 +5,7 @@ import Avatar from "../../../components/Avatar.jsx";
 import Badge from "../../../components/Badge.jsx";
 import Button from "../../../components/Button.jsx";
 import Input from "../../../components/Input.jsx";
-import { projects, statusVariant } from "../../../mock/projectData.js";
+import { projects, statusVariant } from "../../../api/mock/projectData.js";
 
 const filters = ["전체", "진행중", "검토중", "완료"];
 
