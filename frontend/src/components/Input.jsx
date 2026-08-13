@@ -15,6 +15,7 @@ export default function Input({
   placeholder,
   value,
   onChange,
+  className = "",
   ...props
 }) {
   return (
@@ -23,7 +24,7 @@ export default function Input({
       placeholder={placeholder}
       value={value}
       onChange={onChange}
-      className="w-full rounded-md border border-border px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-active/50"
+      className={`w-full rounded-md border border-border px-3 py-2 text-sm text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-active/50 ${className}`}
       {...props}
     />
   );
