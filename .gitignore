@@ -1,3 +1,16 @@
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
 .DS_Store
-node_modules/
+Thumbs.db
+
+# Secrets / local env — 예시 파일만 커밋한다
+.env
+.env.*
+!.env.example
+
+# Backend and frontend have their own .gitignore under backend/ and frontend/
 .env
