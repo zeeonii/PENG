@@ -23,8 +23,12 @@ public class BriefingService {
 
     private final BriefingRepository briefingRepository;
     private final BriefingSourceRepository briefingSourceRepository;
+    private final BriefingGenerationService briefingGenerationService;
 
+    @Transactional
     public List<BriefingSummaryResponse> getTodayBriefings(Long projectId, Long memberId) {
+        briefingGenerationService.generateTodayBriefingIfNeeded(projectId, memberId);
+
         LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
 
         return briefingRepository.findByProjectIdAndMemberIdOrderByCreatedAtDesc(projectId, memberId)
