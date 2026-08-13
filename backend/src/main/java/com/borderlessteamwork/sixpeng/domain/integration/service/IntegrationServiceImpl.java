@@ -11,6 +11,8 @@ import com.borderlessteamwork.sixpeng.domain.integration.repository.IntegrationS
 import com.borderlessteamwork.sixpeng.domain.project.repository.ProjectMemberRepository;
 import com.borderlessteamwork.sixpeng.global.exception.BusinessException;
 import com.borderlessteamwork.sixpeng.global.exception.ErrorCode;
+import com.borderlessteamwork.sixpeng.domain.qna.event.DocumentSavedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +28,7 @@ import java.util.List;
 class IntegrationServiceImpl implements IntegrationService {
 
     private static final Logger log = LoggerFactory.getLogger(IntegrationServiceImpl.class);
+    private final ApplicationEventPublisher eventPublisher;
 
     private final IntegrationStatusRepository integrationStatusRepository;
     private final DocumentRepository documentRepository;
@@ -79,6 +82,7 @@ class IntegrationServiceImpl implements IntegrationService {
                             projectId, DocumentSourceType.NOTION, page.id(), page.title(), content, page.url()));
             document.updateContent(page.title(), content, page.url());
             documentRepository.save(document);
+            eventPublisher.publishEvent(new DocumentSavedEvent(document.getId()));
         }
     }
 
@@ -129,6 +133,7 @@ class IntegrationServiceImpl implements IntegrationService {
                             projectId, DocumentSourceType.GOOGLE_MEET, record.name(), title, content, null));
             document.updateContent(title, content, null);
             documentRepository.save(document);
+            eventPublisher.publishEvent(new DocumentSavedEvent(document.getId()));
         }
     }
 
