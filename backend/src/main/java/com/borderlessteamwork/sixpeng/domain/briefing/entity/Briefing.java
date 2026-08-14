@@ -29,7 +29,7 @@ public class Briefing {
     private Member member;
 
     @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "LONGTEXT")
     private String summary;
 
     @Column(nullable = false, updatable = false)

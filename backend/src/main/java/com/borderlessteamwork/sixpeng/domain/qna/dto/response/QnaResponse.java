@@ -11,7 +11,7 @@ import java.util.List;
 @Builder
 public class QnaResponse {
 
-    private Long id;
+    private Long qnaHistoryId;
     private String question;
     private String answer;
     private LocalDateTime createdAt;
@@ -19,7 +19,7 @@ public class QnaResponse {
 
     public static QnaResponse of(QnaHistory qnaHistory, List<SourceItem> sources) {
         return QnaResponse.builder()
-                .id(qnaHistory.getId())
+                .qnaHistoryId(qnaHistory.getId())
                 .question(qnaHistory.getQuestion())
                 .answer(qnaHistory.getAnswer())
                 .createdAt(qnaHistory.getCreatedAt())
@@ -32,6 +32,7 @@ public class QnaResponse {
     public static class SourceItem {
         private Long documentId;
         private String title;
+        private String sourceType;
         private String sourceUrl;
     }
 }

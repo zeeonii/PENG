@@ -1,9 +1,9 @@
 package com.borderlessteamwork.sixpeng.domain.briefing.controller;
 
-import com.borderlessteamwork.sixpeng.domain.briefing.dto.response.BriefingDetailResponse;
-import com.borderlessteamwork.sixpeng.domain.briefing.dto.response.BriefingSummaryResponse;
+import com.borderlessteamwork.sixpeng.domain.briefing.dto.response.BriefingResponse;
 import com.borderlessteamwork.sixpeng.domain.briefing.service.BriefingService;
 import com.borderlessteamwork.sixpeng.global.response.ApiResponse;
+import com.borderlessteamwork.sixpeng.global.security.CurrentMember;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,15 +17,16 @@ public class BriefingController {
     private final BriefingService briefingService;
 
     @GetMapping("/today")
-    public ApiResponse<List<BriefingSummaryResponse>> getTodayBriefings(
-            @PathVariable Long projectId,
-            @RequestParam Long memberId
+    public ApiResponse<List<BriefingResponse>> getTodayBriefings(
+            @CurrentMember Long memberId,
+            @PathVariable Long projectId
     ) {
         return ApiResponse.success(briefingService.getTodayBriefings(projectId, memberId));
     }
 
     @GetMapping("/{briefingId}")
-    public ApiResponse<BriefingDetailResponse> getBriefingDetail(
+    public ApiResponse<BriefingResponse> getBriefingDetail(
+            @CurrentMember Long memberId,
             @PathVariable Long projectId,
             @PathVariable Long briefingId
     ) {

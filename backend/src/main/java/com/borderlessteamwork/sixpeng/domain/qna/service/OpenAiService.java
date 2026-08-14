@@ -60,6 +60,10 @@ public class OpenAiService {
                 %s
                 """.formatted(contextText, question);
 
+        return chatCompletion(systemPrompt, userPrompt);
+    }
+
+    public String chatCompletion(String systemPrompt, String userPrompt) {
         Map<String, Object> body = Map.of(
                 "model", CHAT_MODEL,
                 "messages", List.of(
@@ -74,11 +78,11 @@ public class OpenAiService {
                 .bodyValue(body)
                 .retrieve()
                 .bodyToMono(ChatCompletionResponse.class)
-                .doOnError(e -> log.error("OpenAI 답변 생성 실패", e))
+                .doOnError(e -> log.error("OpenAI 채팅 완성 실패", e))
                 .block();
 
         if (response == null || response.choices() == null || response.choices().isEmpty()) {
-            throw new IllegalStateException("OpenAI 답변 응답이 비어있습니다.");
+            throw new IllegalStateException("OpenAI 채팅 완성 응답이 비어있습니다.");
         }
 
         return response.choices().get(0).message().content();
