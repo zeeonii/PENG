@@ -1,0 +1,39 @@
+/**
+ * 프로젝트 및 참여자 관련 API입니다.
+ *
+ * 사용 예시:
+ * import { getProjects, getProject, getProjectMembers } from "../api/project.js";
+ *
+ * const { data } = await getProjects();
+ * const { data } = await getProject(projectId);
+ * await inviteProjectMember(projectId, { email, role });
+ */
+
+import client from "./client.js";
+
+/** 내가 참여한 프로젝트 목록 */
+export const getProjects = () => client.get("/projects");
+
+/**
+ * 프로젝트 생성
+ * @param {{ name: string }} data
+ */
+export const createProject = (data) => client.post("/projects", data);
+
+/** 프로젝트 상세 */
+export const getProject = (projectId) => client.get(`/projects/${projectId}`);
+
+/** 프로젝트 참여자 목록 */
+export const getProjectMembers = (projectId) =>
+  client.get(`/projects/${projectId}/members`);
+
+/**
+ * 참여자 초대
+ * @param {{ email: string, role?: string }} data
+ */
+export const inviteProjectMember = (projectId, data) =>
+  client.post(`/projects/${projectId}/members`, data);
+
+/** 참여자 내보내기 */
+export const removeProjectMember = (projectId, memberId) =>
+  client.delete(`/projects/${projectId}/members/${memberId}`);
