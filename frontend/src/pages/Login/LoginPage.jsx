@@ -1,8 +1,8 @@
-import { useNavigate } from "react-router-dom";
+import { goToGoogleLogin } from "../../api/member.js";
 import Button from "../../components/Button.jsx";
 
 export default function LoginPage() {
-  const navigate = useNavigate();
+  
 
   return (
     <main className="grid min-h-screen bg-secondary lg:grid-cols-2">
@@ -32,7 +32,7 @@ export default function LoginPage() {
           <Button
             className="mt-8 w-full border border-border bg-white !py-3 !text-primary"
             variant="secondary"
-            onClick={() => navigate("/home")}
+            onClick={goToGoogleLogin}
           >
             <span className="font-bold text-primary">G</span> Google로 계속하기
           </Button>
