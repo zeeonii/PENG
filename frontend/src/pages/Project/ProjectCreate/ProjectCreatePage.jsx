@@ -1,77 +1,143 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import MainLayout from "../../../layouts/MainLayout.jsx";
 import Button from "../../../components/Button.jsx";
 import Input from "../../../components/Input.jsx";
-import { createProject, projects, saveProject } from "../../../api/mock/projectData.js";
+import Avatar from "../../../components/Avatar.jsx";
+import {
+  createProject,
+  getProject,
+  getProjectMembers,
+  inviteProjectMember,
+  removeProjectMember,
+} from "../../../api/project.js";
+import { connectNotion as connectNotionIntegration } from "../../../api/integration.js";
 
-const emptyMember = { email: "", country: "대한민국", timezone: "GMT+9 서울" };
+// 명세상 프로젝트 이름 수정 API(PATCH /projects/{id})가 없어 이 화면은
+// "수정" 대신 기존 프로젝트의 팀원·연동을 관리하는 용도로 동작합니다.
+const emptyInvite = { email: "", role: "" };
 
 export default function ProjectCreatePage() {
   const navigate = useNavigate();
   const { projectId } = useParams();
-  const existingProject = projects.find((project) => project.id === projectId);
-  const isEditing = Boolean(existingProject);
+  const isEditing = Boolean(projectId);
 
-  const [projectName, setProjectName] = useState(existingProject?.title ?? "");
-  const [startDate, setStartDate] = useState(existingProject?.startDate ?? "");
-  const [endDate, setEndDate] = useState(existingProject?.endDate ?? "");
-  const [members, setMembers] = useState([emptyMember]);
-  const [isNotionConnected, setIsNotionConnected] = useState(false);
+  const [projectName, setProjectName] = useState("");
+  const [loadError, setLoadError] = useState(null);
+  const [members, setMembers] = useState([]);
+  const [invites, setInvites] = useState([emptyInvite]);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
 
-  const updateMember = (index, key, value) => {
-    setMembers((current) =>
-      current.map((member, memberIndex) =>
-        memberIndex === index ? { ...member, [key]: value } : member,
-      ),
+  useEffect(() => {
+    if (!isEditing) return;
+    let ignore = false;
+
+    Promise.all([getProject(projectId), getProjectMembers(projectId)])
+      .then(([projectRes, membersRes]) => {
+        if (ignore) return;
+        setProjectName(projectRes.data.name);
+        setMembers(membersRes.data);
+      })
+      .catch((err) => {
+        if (!ignore) setLoadError(err);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [isEditing, projectId]);
+
+  const updateInvite = (index, key, value) => {
+    setInvites((current) =>
+      current.map((invite, i) => (i === index ? { ...invite, [key]: value } : invite)),
     );
   };
 
-  const removeMember = (index) => {
-    if (members.length === 1) return;
-    setMembers((current) => current.filter((_, memberIndex) => memberIndex !== index));
+  const removeInviteRow = (index) => {
+    if (invites.length === 1) return;
+    setInvites((current) => current.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    if (isEditing) {
-      const formatDate = (date) => date.replaceAll("-", ".");
-      saveProject({
-        ...existingProject,
-        title: projectName,
-        startDate,
-        endDate,
-        period:
-          startDate && endDate
-            ? `${formatDate(startDate)} — ${formatDate(endDate)}`
-            : existingProject.period,
-        updated: "방금 전",
-      });
-      navigate(`/projects/${projectId}`);
-      return;
+  const removeMember = async (memberId) => {
+    try {
+      await removeProjectMember(projectId, memberId);
+      setMembers((current) => current.filter((member) => member.memberId !== memberId));
+    } catch {
+      setSubmitError("팀원을 내보내지 못했어요.");
     }
-
-    const formatDate = (date) => date.replaceAll("-", ".");
-    const invitedMembers = members
-      .map((member) => member.email.trim().split("@")[0])
-      .filter(Boolean);
-    const newProject = createProject({
-      id: `project-${Date.now()}`,
-      title: projectName,
-      description: "새로 만든 프로젝트입니다.",
-      status: "진행중",
-      members: invitedMembers.length > 0 ? ["김승언", ...invitedMembers] : ["김승언"],
-      updated: "방금 전",
-      tasks: 0,
-      period:
-        startDate && endDate
-          ? `${formatDate(startDate)} — ${formatDate(endDate)}`
-          : "기간 미정",
-      startDate,
-      endDate,
-    });
-    navigate(`/projects/${newProject.id}`);
   };
+
+  const connectNotion = async () => {
+    try {
+      await connectNotionIntegration(projectId);
+    } catch {
+      setSubmitError("Notion 연동을 시작하지 못했어요.");
+    }
+  };
+
+  const inviteMembersTo = async (targetProjectId) => {
+    const validInvites = invites.filter((invite) => invite.email.trim());
+    const results = await Promise.allSettled(
+      validInvites.map((invite) =>
+        inviteProjectMember(targetProjectId, {
+          email: invite.email.trim(),
+          role: invite.role.trim() || undefined,
+        }),
+      ),
+    );
+    const failed = results.filter((result) => result.status === "rejected");
+    return failed.length;
+  };
+
+  const handleCreate = async (event) => {
+    event.preventDefault();
+    setSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const { data: newProject } = await createProject({ name: projectName });
+      const failedCount = await inviteMembersTo(newProject.id);
+
+      if (failedCount > 0) {
+        setSubmitError(
+          `프로젝트는 생성되었지만 팀원 ${failedCount}명 초대에 실패했어요. 상세 화면에서 다시 시도해주세요.`,
+        );
+        setTimeout(() => navigate(`/projects/${newProject.id}`), 1500);
+        return;
+      }
+
+      navigate(`/projects/${newProject.id}`);
+    } catch {
+      setSubmitError("프로젝트를 생성하지 못했어요.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleInviteExisting = async (event) => {
+    event.preventDefault();
+    setSubmitting(true);
+    setSubmitError(null);
+
+    const failedCount = await inviteMembersTo(projectId);
+    if (failedCount > 0) {
+      setSubmitError(`팀원 ${failedCount}명 초대에 실패했어요. 이미 가입한 이메일인지 확인해주세요.`);
+    } else {
+      const { data } = await getProjectMembers(projectId);
+      setMembers(data);
+      setInvites([emptyInvite]);
+    }
+    setSubmitting(false);
+  };
+
+  if (isEditing && loadError) {
+    return (
+      <MainLayout>
+        <p className="text-sm text-danger">프로젝트 정보를 불러오지 못했어요.</p>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -81,145 +147,155 @@ export default function ProjectCreatePage() {
             PROJECT
           </p>
           <h1 className="text-2xl font-bold text-primary">
-            {isEditing ? "프로젝트 수정" : "새 프로젝트 만들기"}
+            {isEditing ? "팀원 · 연동 관리" : "새 프로젝트 만들기"}
           </h1>
           <p className="mt-2 text-sm text-muted">
             {isEditing
-              ? "프로젝트 정보와 팀원 구성을 수정할 수 있습니다."
+              ? "팀원을 초대하거나 내보내고, 외부 서비스 연동을 관리할 수 있습니다."
               : "프로젝트를 만들고 팀원과 함께 협업을 시작하세요."}
           </p>
         </header>
 
-        <form onSubmit={handleSubmit} className="space-y-7 rounded-xl border border-border bg-white p-6 sm:p-8">
-          <section>
-            <h2 className="mb-4 text-base font-semibold text-primary">프로젝트 정보</h2>
-            <label className="block text-sm font-medium text-primary">
-              프로젝트명
-              <span className="ml-1 text-danger">*</span>
-              <Input
-                placeholder="예: 글로벌 협업 프로젝트"
-                value={projectName}
-                onChange={(event) => setProjectName(event.target.value)}
-                required
-                className="mt-2"
-              />
-            </label>
+        {submitError && (
+          <p className="mb-4 rounded-lg bg-danger/10 px-4 py-3 text-sm text-danger">
+            {submitError}
+          </p>
+        )}
 
-            <div className="mt-5">
-              <p className="text-sm font-medium text-primary">프로젝트 기간</p>
-              <div className="mt-2 grid gap-3 sm:grid-cols-2">
-                <label className="text-xs text-muted">
-                  시작일
-                  <Input
-                    type="date"
-                    value={startDate}
-                    onChange={(event) => setStartDate(event.target.value)}
-                    className="mt-1"
-                  />
-                </label>
-                <label className="text-xs text-muted">
-                  종료일
-                  <Input
-                    type="date"
-                    min={startDate || undefined}
-                    value={endDate}
-                    onChange={(event) => setEndDate(event.target.value)}
-                    className="mt-1"
-                  />
-                </label>
-              </div>
-            </div>
-          </section>
+        {!isEditing ? (
+          <form onSubmit={handleCreate} className="space-y-7 rounded-xl border border-border bg-white p-6 sm:p-8">
+            <section>
+              <h2 className="mb-4 text-base font-semibold text-primary">프로젝트 정보</h2>
+              <label className="block text-sm font-medium text-primary">
+                프로젝트명
+                <span className="ml-1 text-danger">*</span>
+                <Input
+                  placeholder="예: 글로벌 협업 프로젝트"
+                  value={projectName}
+                  onChange={(event) => setProjectName(event.target.value)}
+                  required
+                  className="mt-2"
+                />
+              </label>
+            </section>
 
-          <section className="border-t border-border pt-7">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-base font-semibold text-primary">팀원 초대</h2>
-                <p className="mt-1 text-xs text-muted">필요한 팀원을 추가하고 국가와 시간대를 설정하세요.</p>
-              </div>
-              <Button
-                variant="secondary"
-                className="shrink-0 px-3 py-1.5 text-xs"
-                onClick={() => setMembers((current) => [...current, emptyMember])}
-              >
-                + 팀원 추가
+            <InviteRows invites={invites} onUpdate={updateInvite} onRemove={removeInviteRow}
+              onAdd={() => setInvites((current) => [...current, emptyInvite])} />
+
+            <p className="border-t border-border pt-7 text-xs text-muted">
+              Notion 연동은 프로젝트 생성 후 관리 화면에서 할 수 있어요.
+            </p>
+
+            <div className="flex justify-end gap-2 border-t border-border pt-6">
+              <Button variant="secondary" onClick={() => navigate(-1)} disabled={submitting}>
+                취소
+              </Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting ? "생성 중..." : "프로젝트 생성"}
               </Button>
             </div>
+          </form>
+        ) : (
+          <div className="space-y-7">
+            <section className="rounded-xl border border-border bg-white p-6 sm:p-8">
+              <h2 className="mb-4 text-base font-semibold text-primary">프로젝트명</h2>
+              <p className="text-sm text-primary">{projectName || "불러오는 중..."}</p>
+            </section>
 
-            <div className="space-y-2">
-              {members.map((member, index) => (
-                <div key={index} className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_130px_120px_auto]">
-                  <Input
-                    type="email"
-                    placeholder="이메일 주소"
-                    value={member.email}
-                    onChange={(event) => updateMember(index, "email", event.target.value)}
-                  />
-                  <select
-                    value={member.country}
-                    onChange={(event) => {
-                      const country = event.target.value;
-                      updateMember(index, "country", country);
-                      updateMember(
-                        index,
-                        "timezone",
-                        country === "대한민국" ? "GMT+9 서울" : "GMT-8 샌프란시스코",
-                      );
-                    }}
-                    className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm text-primary focus:outline-none focus:ring-2 focus:ring-active/50"
-                  >
-                    <option>대한민국</option>
-                    <option>미국</option>
-                  </select>
-                  <select
-                    value={member.timezone}
-                    onChange={(event) => updateMember(index, "timezone", event.target.value)}
-                    className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm text-primary focus:outline-none focus:ring-2 focus:ring-active/50"
-                  >
-                    <option>GMT+9 서울</option>
-                    <option>GMT-8 샌프란시스코</option>
-                  </select>
-                  <Button
-                    variant="secondary"
-                    className="px-3 py-2 text-xs"
-                    onClick={() => removeMember(index)}
-                    disabled={members.length === 1}
-                  >
-                    삭제
-                  </Button>
+            <section className="rounded-xl border border-border bg-white p-6 sm:p-8">
+              <h2 className="mb-4 text-base font-semibold text-primary">현재 팀원</h2>
+              <div className="space-y-2">
+                {members.map((member) => (
+                  <div key={member.memberId} className="flex items-center justify-between gap-3 rounded-lg border border-border px-4 py-3">
+                    <span className="flex items-center gap-2">
+                      <Avatar name={member.name} size="sm" />
+                      <span className="text-sm text-primary">{member.name}</span>
+                      {member.role && <span className="text-xs text-muted">· {member.role}</span>}
+                    </span>
+                    <Button variant="secondary" className="px-3 py-1.5 text-xs" onClick={() => removeMember(member.memberId)}>
+                      내보내기
+                    </Button>
+                  </div>
+                ))}
+                {members.length === 0 && (
+                  <p className="text-sm text-muted">팀원이 없어요.</p>
+                )}
+              </div>
+            </section>
+
+            <form onSubmit={handleInviteExisting} className="rounded-xl border border-border bg-white p-6 sm:p-8">
+              <InviteRows invites={invites} onUpdate={updateInvite} onRemove={removeInviteRow}
+                onAdd={() => setInvites((current) => [...current, emptyInvite])} />
+              <div className="mt-4 flex justify-end">
+                <Button type="submit" disabled={submitting}>
+                  {submitting ? "초대 중..." : "팀원 초대하기"}
+                </Button>
+              </div>
+            </form>
+
+            <section className="rounded-xl border border-border bg-white p-6 sm:p-8">
+              <h2 className="text-base font-semibold text-primary">Notion 워크스페이스 연동</h2>
+              <div className="mt-4 flex items-center justify-between gap-4 rounded-lg border border-border p-4">
+                <div>
+                  <p className="text-sm font-medium text-primary">Notion</p>
+                  <p className="mt-1 text-xs text-muted">
+                    프로젝트 관련 문서를 함께 동기화합니다.
+                  </p>
                 </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="border-t border-border pt-7">
-            <h2 className="text-base font-semibold text-primary">Notion 워크스페이스 연동</h2>
-            <div className="mt-4 flex items-center justify-between gap-4 rounded-lg border border-border p-4">
-              <div>
-                <p className="text-sm font-medium text-primary">Notion</p>
-                <p className="mt-1 text-xs text-muted">
-                  프로젝트 관련 문서를 함께 동기화합니다.
-                </p>
+                <Button variant="secondary" onClick={connectNotion}>
+                  연동하기
+                </Button>
               </div>
-              <Button
-                variant="secondary"
-                onClick={() => setIsNotionConnected((current) => !current)}
-              >
-                {isNotionConnected ? "연동됨" : "연동하기"}
-              </Button>
-            </div>
-          </section>
+            </section>
 
-          <div className="flex justify-end gap-2 border-t border-border pt-6">
-            <Button variant="secondary" onClick={() => navigate(-1)}>
-              취소
-            </Button>
-            <Button type="submit">
-              {isEditing ? "수정 완료" : "프로젝트 생성"}
-            </Button>
+            <div className="flex justify-end border-t border-border pt-6">
+              <Button onClick={() => navigate(`/projects/${projectId}`)}>완료</Button>
+            </div>
           </div>
-        </form>
+        )}
       </div>
     </MainLayout>
+  );
+}
+
+function InviteRows({ invites, onUpdate, onRemove, onAdd }) {
+  return (
+    <section>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold text-primary">팀원 초대</h2>
+          <p className="mt-1 text-xs text-muted">이미 가입한 회원의 이메일만 초대할 수 있어요.</p>
+        </div>
+        <Button variant="secondary" className="shrink-0 px-3 py-1.5 text-xs" onClick={onAdd}>
+          + 팀원 추가
+        </Button>
+      </div>
+
+      <div className="space-y-2">
+        {invites.map((invite, index) => (
+          <div key={index} className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_160px_auto]">
+            <Input
+              type="email"
+              placeholder="이메일 주소"
+              value={invite.email}
+              onChange={(event) => onUpdate(index, "email", event.target.value)}
+            />
+            <Input
+              placeholder="담당 업무 (선택)"
+              value={invite.role}
+              onChange={(event) => onUpdate(index, "role", event.target.value)}
+            />
+            <Button
+              variant="secondary"
+              className="px-3 py-2 text-xs"
+              onClick={() => onRemove(index)}
+              disabled={invites.length === 1}
+            >
+              삭제
+            </Button>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }

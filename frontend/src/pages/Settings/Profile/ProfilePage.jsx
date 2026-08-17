@@ -1,23 +1,20 @@
 /**
  * 설정 > 프로필 · 언어 설정
  *
- * 저장은 현재 mock 동작이며, 실제 연동 시 PATCH /accounts/me 로 교체합니다.
+ * Cultural Translation 표시 설정은 저장할 API가 명세에 없어 아직 로컬 상태로만
+ * 동작합니다. (백엔드 확인 필요, 새로고침하면 초기화됩니다)
  *
- * Cultural Translation 표시 설정은 원문과 번역문 중 최소 하나가 항상 켜져 있어야 하며,
- * 마지막 하나를 끄려고 하면 무시됩니다.
+ * 국가/시간대는 백엔드가 자유 텍스트로 저장합니다(예: "KR", "Asia/Seoul").
+ * 와이어프레임의 한글 드롭다운과 형식이 달라 텍스트 입력으로 대체했습니다.
  */
 
 import { useState } from "react";
 import SettingsLayout from "../SettingsLayout.jsx";
 import Button from "../../../components/Button.jsx";
 import Input from "../../../components/Input.jsx";
-import {
-  currentMember,
-  translationDisplay,
-  COUNTRY_OPTIONS,
-  TIMEZONE_OPTIONS,
-  LANGUAGE_OPTIONS,
-} from "../../../api/mock/settingsData.js";
+import { updateMe } from "../../../api/member.js";
+import { useUser } from "../../../contexts/UserContext.jsx";
+import { LANGUAGE_OPTIONS, translationDisplay } from "../../../api/mock/settingsData.js";
 
 function Toggle({ checked, onChange, label }) {
   return (
@@ -44,11 +41,27 @@ function Toggle({ checked, onChange, label }) {
 }
 
 export default function ProfilePage() {
-  const [profile, setProfile] = useState(currentMember);
+  const { user, loading, refresh } = useUser();
+  const [form, setForm] = useState({ language: "KR", country: "", timezone: "", duty: "" });
+  const [loadedUser, setLoadedUser] = useState(null);
   const [display, setDisplay] = useState(translationDisplay);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+  const [saved, setSaved] = useState(false);
 
-  const updateProfile = (key, value) =>
-    setProfile((prev) => ({ ...prev, [key]: value }));
+  // user가 새로 로드되면(로그인 직후 등) 폼 값을 그 값으로 맞춥니다.
+  // (렌더링 중 상태 조정 — https://ko.react.dev/learn/you-might-not-need-an-effect)
+  if (user && user !== loadedUser) {
+    setLoadedUser(user);
+    setForm({
+      language: user.language ?? "KR",
+      country: user.country ?? "",
+      timezone: user.timezone ?? "",
+      duty: user.duty ?? "",
+    });
+  }
+
+  const updateField = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
 
   // 원문과 번역문 중 최소 하나는 항상 표시되어야 합니다.
   const updateDisplay = (key, value) => {
@@ -57,10 +70,29 @@ export default function ProfilePage() {
     setDisplay(next);
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    // 실제 연동 시 PATCH /accounts/me 호출로 교체
+    setSaving(true);
+    setError(null);
+    setSaved(false);
+    try {
+      await updateMe(form);
+      await refresh();
+      setSaved(true);
+    } catch {
+      setError("저장에 실패했어요.");
+    } finally {
+      setSaving(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <SettingsLayout>
+        <p className="text-sm text-muted">불러오는 중...</p>
+      </SettingsLayout>
+    );
+  }
 
   return (
     <SettingsLayout>
@@ -69,28 +101,24 @@ export default function ProfilePage() {
       <form onSubmit={handleSubmit} className="mt-6 max-w-md space-y-6">
         <label className="block">
           <span className="text-sm text-primary">국가</span>
-          <select
-            value={profile.country}
-            onChange={(event) => updateProfile("country", event.target.value)}
-            className="mt-2 w-full rounded-md border border-border bg-white px-3 py-2 text-sm text-primary"
-          >
-            {COUNTRY_OPTIONS.map((option) => (
-              <option key={option}>{option}</option>
-            ))}
-          </select>
+          <span className="mt-2 block">
+            <Input
+              value={form.country}
+              onChange={(event) => updateField("country", event.target.value)}
+              placeholder="예: KR"
+            />
+          </span>
         </label>
 
         <label className="block">
           <span className="text-sm text-primary">시간대</span>
-          <select
-            value={profile.timezone}
-            onChange={(event) => updateProfile("timezone", event.target.value)}
-            className="mt-2 w-full rounded-md border border-border bg-white px-3 py-2 text-sm text-primary"
-          >
-            {TIMEZONE_OPTIONS.map((option) => (
-              <option key={option}>{option}</option>
-            ))}
-          </select>
+          <span className="mt-2 block">
+            <Input
+              value={form.timezone}
+              onChange={(event) => updateField("timezone", event.target.value)}
+              placeholder="예: Asia/Seoul"
+            />
+          </span>
         </label>
 
         <div>
@@ -99,8 +127,9 @@ export default function ProfilePage() {
             {LANGUAGE_OPTIONS.map(({ value, label }) => (
               <Button
                 key={value}
-                variant={profile.language === value ? "primary" : "secondary"}
-                onClick={() => updateProfile("language", value)}
+                type="button"
+                variant={form.language === value ? "primary" : "secondary"}
+                onClick={() => updateField("language", value)}
               >
                 {label}
               </Button>
@@ -112,8 +141,8 @@ export default function ProfilePage() {
           <span className="text-sm text-primary">담당 업무</span>
           <span className="mt-2 block">
             <Input
-              value={profile.duty}
-              onChange={(event) => updateProfile("duty", event.target.value)}
+              value={form.duty}
+              onChange={(event) => updateField("duty", event.target.value)}
               placeholder="예: 백엔드 개발"
             />
           </span>
@@ -139,12 +168,17 @@ export default function ProfilePage() {
 
           <p className="mt-3 text-xs leading-5 text-muted">
             원문과 번역문 중 최소 하나는 항상 표시되어야 합니다. 둘 다 끄는 설정은
-            허용되지 않습니다.
+            허용되지 않습니다. (이 설정은 아직 저장되지 않습니다)
           </p>
         </section>
 
+        {error && <p className="text-sm text-danger">{error}</p>}
+        {saved && <p className="text-sm text-success">저장했어요.</p>}
+
         <div className="flex justify-end">
-          <Button type="submit">저장</Button>
+          <Button type="submit" disabled={saving}>
+            {saving ? "저장 중..." : "저장"}
+          </Button>
         </div>
       </form>
     </SettingsLayout>
