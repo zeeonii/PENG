@@ -22,7 +22,7 @@ spring:
 
 app:
   oauth2:
-    success-redirect-uri: http://localhost:5173/oauth/callback
+    success-redirect-uri: http://localhost:5173/auth/callback
     failure-redirect-uri: http://localhost:5173/login?error=oauth
   cors:
     allowed-origins: http://localhost:5173
