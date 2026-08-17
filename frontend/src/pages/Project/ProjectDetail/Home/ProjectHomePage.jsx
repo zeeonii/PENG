@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import MainLayout from "../../../../layouts/MainLayout.jsx";
 import Avatar from "../../../../components/Avatar.jsx";
@@ -59,9 +60,12 @@ function ProjectOverview({ project }) {
   );
 }
 
+const TAB_INDEX = { HOME: 0, BRIEFING: 1, QNA: 2, MEMBERS: 3, INTEGRATION: 4 };
+
 export default function ProjectHomePage() {
   const { projectId } = useParams();
   const project = projects.find((item) => item.id === projectId) ?? projects[0];
+  const [activeTabIndex, setActiveTabIndex] = useState(TAB_INDEX.HOME);
 
   return (
     <MainLayout>
@@ -82,9 +86,18 @@ export default function ProjectHomePage() {
         </header>
 
         <Tab
+          activeIndex={activeTabIndex}
+          onTabChange={setActiveTabIndex}
           tabs={[
             { label: "홈", content: <ProjectOverview project={project} /> },
-            { label: "AI 브리핑 상세", content: <BriefingTab /> },
+            {
+              label: "AI 브리핑 상세",
+              content: (
+                <BriefingTab
+                  onAskQuestion={() => setActiveTabIndex(TAB_INDEX.QNA)}
+                />
+              ),
+            },
             { label: "컨텍스트 Q&A", content: <QnATab /> },
             { label: "팀원 관리", content: <MembersTab /> },
             { label: "연동 상태", content: <IntegrationTab /> },
