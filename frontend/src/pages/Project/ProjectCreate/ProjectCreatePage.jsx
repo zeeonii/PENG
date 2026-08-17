@@ -11,7 +11,7 @@ import {
   inviteProjectMember,
   removeProjectMember,
 } from "../../../api/project.js";
-import { startNotionIntegration } from "../../../api/integration.js";
+import { connectNotion as connectNotionIntegration } from "../../../api/integration.js";
 
 // 명세상 프로젝트 이름 수정 API(PATCH /projects/{id})가 없어 이 화면은
 // "수정" 대신 기존 프로젝트의 팀원·연동을 관리하는 용도로 동작합니다.
@@ -70,8 +70,7 @@ export default function ProjectCreatePage() {
 
   const connectNotion = async () => {
     try {
-      const { data } = await startNotionIntegration(projectId);
-      window.location.href = data.authorizeUrl;
+      await connectNotionIntegration(projectId);
     } catch {
       setSubmitError("Notion 연동을 시작하지 못했어요.");
     }
