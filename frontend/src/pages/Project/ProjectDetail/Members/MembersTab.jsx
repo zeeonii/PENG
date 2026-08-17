@@ -36,7 +36,14 @@ export default function MembersTab() {
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-border bg-white">
-        <table className="w-full min-w-[560px] text-left text-sm">
+        <table className="w-full min-w-[560px] table-fixed text-left text-sm">
+          <colgroup>
+            <col className="w-[30%]" />
+            <col className="w-[22%]" />
+            <col className="w-[26%]" />
+            <col className="w-[14%]" />
+            <col className="w-[8%]" />
+          </colgroup>
           <thead className="border-b border-border text-xs text-muted">
             <tr>
               <th className="px-4 py-3 font-medium">이름</th>
@@ -50,15 +57,17 @@ export default function MembersTab() {
             {members.map((member) => (
               <tr key={member.memberId}>
                 <td className="px-4 py-3">
-                  <span className="flex items-center gap-2">
+                  <span className="flex items-center gap-2 overflow-hidden">
                     <Avatar name={member.name} size="sm" />
-                    <strong className="font-medium text-primary">
+                    <strong className="truncate font-medium text-primary">
                       {member.name}
                     </strong>
                   </span>
                 </td>
-                <td className="px-4 py-3 text-muted">{member.duty}</td>
-                <td className="px-4 py-3 text-muted">
+                <td className="truncate px-4 py-3 text-muted">
+                  {member.duty}
+                </td>
+                <td className="truncate px-4 py-3 text-muted">
                   {member.timezone
                     ? `${member.country}(${member.timezone})`
                     : member.country}
