@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import MainLayout from "../../../../layouts/MainLayout.jsx";
 import Avatar from "../../../../components/Avatar.jsx";
@@ -9,9 +9,13 @@ import BriefingTab from "../Briefing/BriefingTab.jsx";
 import QnATab from "../QnA/QnATab.jsx";
 import MembersTab from "../Members/MembersTab.jsx";
 import IntegrationTab from "../Integration/IntegrationTab.jsx";
-import { projects, statusVariant } from "../../../../api/mock/projectData.js";
+import { getProject, getProjectMembers } from "../../../../api/project.js";
+import { getTodayBriefing } from "../../../../api/briefing.js";
 
-function ProjectOverview({ project }) {
+// 명세에 status/description/기간 필드가 없어 안전하게 가드 처리했습니다.
+const statusVariant = { 진행중: "active", 검토중: "danger", 완료: "success" };
+
+function ProjectOverview({ members, briefing }) {
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_220px]">
       <div className="rounded-xl border border-border bg-secondary/40 p-6">
@@ -25,29 +29,30 @@ function ProjectOverview({ project }) {
         <h2 className="mt-6 text-xl font-bold text-primary">
           이 프로젝트에서 방금 있었던 일
         </h2>
-        <p className="mt-3 text-sm leading-6 text-muted">
-          API 설계 회의 후 인증 방식이 JWT로 결정되었고, 온보딩 가이드 문서가 수정되었습니다.
-        </p>
-        <button type="button" className="mt-5 text-sm font-medium text-primary underline underline-offset-4">
-          근거 2건 보기
-        </button>
+        {briefing ? (
+          <p className="mt-3 text-sm leading-6 text-muted">{briefing.summary}</p>
+        ) : (
+          <p className="mt-3 text-sm leading-6 text-muted">아직 오늘의 브리핑이 없어요.</p>
+        )}
       </div>
 
       <aside className="rounded-xl border border-border bg-white p-5">
         <h2 className="font-semibold text-primary">팀원</h2>
         <div className="mt-4 space-y-3">
-          {project.members.map((member, index) => (
-            <div key={member} className="flex items-center gap-2">
-              <Avatar name={member} size="sm" />
+          {members.map((member) => (
+            <div key={member.memberId} className="flex items-center gap-2">
+              <Avatar name={member.name} size="sm" />
               <div>
-                <p className="text-sm font-medium text-primary">{member}</p>
-                <p className="text-xs text-muted">{index === 0 ? "프론트엔드" : "프로젝트 팀원"}</p>
+                <p className="text-sm font-medium text-primary">{member.name}</p>
+                <p className="text-xs text-muted">{member.role ?? "프로젝트 팀원"}</p>
               </div>
             </div>
           ))}
+          {members.length === 0 && <p className="text-xs text-muted">팀원이 없어요.</p>}
         </div>
       </aside>
 
+      {/* 최근 활동을 조회하는 API가 명세에 없어 아직 mock 문구입니다. */}
       <section className="lg:col-span-2">
         <h2 className="mb-3 text-base font-semibold text-primary">최근 활동</h2>
         <ul className="overflow-hidden rounded-xl border border-border bg-white divide-y divide-border">
@@ -64,8 +69,55 @@ const TAB_INDEX = { HOME: 0, BRIEFING: 1, QNA: 2, MEMBERS: 3, INTEGRATION: 4 };
 
 export default function ProjectHomePage() {
   const { projectId } = useParams();
-  const project = projects.find((item) => item.id === projectId) ?? projects[0];
   const [activeTabIndex, setActiveTabIndex] = useState(TAB_INDEX.HOME);
+
+  const [project, setProject] = useState(null);
+  const [members, setMembers] = useState([]);
+  const [briefing, setBriefing] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let ignore = false;
+
+    Promise.all([
+      getProject(projectId),
+      getProjectMembers(projectId),
+      getTodayBriefing(projectId).catch(() => ({ data: null })),
+    ])
+      .then(([projectRes, membersRes, briefingRes]) => {
+        if (ignore) return;
+        setProject(projectRes.data);
+        setMembers(membersRes.data);
+        setBriefing(briefingRes.data);
+      })
+      .catch((err) => {
+        if (!ignore) setError(err);
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [projectId]);
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <p className="text-sm text-muted">불러오는 중...</p>
+      </MainLayout>
+    );
+  }
+
+  if (error || !project) {
+    return (
+      <MainLayout>
+        <p className="text-sm text-danger">프로젝트를 불러오지 못했어요.</p>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -73,23 +125,29 @@ export default function ProjectHomePage() {
         <header className="mb-7 border-b border-border pb-6">
           <p className="mb-2 text-xs font-semibold tracking-[0.16em] text-muted">PROJECT</p>
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-bold text-primary">{project.title}</h1>
-            <Badge variant={statusVariant[project.status]}>{project.status}</Badge>
+            <h1 className="text-2xl font-bold text-primary">{project.name}</h1>
+            {project.status && (
+              <Badge variant={statusVariant[project.status]}>{project.status}</Badge>
+            )}
             <Link to={`/projects/${project.id}/edit`}>
               <Button variant="secondary" className="px-3 py-1.5 text-xs">
-                수정
+                팀원 · 연동 관리
               </Button>
             </Link>
           </div>
-          <p className="mt-3 text-sm text-muted">{project.description}</p>
-          <p className="mt-2 text-sm text-muted">프로젝트 기간 · {project.period}</p>
+          {project.description && (
+            <p className="mt-3 text-sm text-muted">{project.description}</p>
+          )}
         </header>
 
         <Tab
           activeIndex={activeTabIndex}
           onTabChange={setActiveTabIndex}
           tabs={[
-            { label: "홈", content: <ProjectOverview project={project} /> },
+            {
+              label: "홈",
+              content: <ProjectOverview members={members} briefing={briefing} />,
+            },
             {
               label: "AI 브리핑 상세",
               content: (
