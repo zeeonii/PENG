@@ -152,13 +152,14 @@ export default function ProjectHomePage() {
               label: "AI 브리핑 상세",
               content: (
                 <BriefingTab
+                  projectId={projectId}
                   onAskQuestion={() => setActiveTabIndex(TAB_INDEX.QNA)}
                 />
               ),
             },
-            { label: "컨텍스트 Q&A", content: <QnATab /> },
-            { label: "팀원 관리", content: <MembersTab /> },
-            { label: "연동 상태", content: <IntegrationTab /> },
+            { label: "컨텍스트 Q&A", content: <QnATab projectId={projectId} /> },
+            { label: "팀원 관리", content: <MembersTab projectId={projectId} /> },
+            { label: "연동 상태", content: <IntegrationTab projectId={projectId} /> },
           ]}
         />
       </div>
