@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import LoginPage from "./pages/Login/LoginPage.jsx";
+import AuthCallbackPage from "./pages/Login/AuthCallbackPage.jsx";
 import HomePage from "./pages/Home/HomePage.jsx";
 import ProjectListPage from "./pages/Project/ProjectList/ProjectListPage.jsx";
 import ProjectCreatePage from "./pages/Project/ProjectCreate/ProjectCreatePage.jsx";
@@ -12,6 +13,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/auth/callback" element={<AuthCallbackPage />} />
       <Route path="/home" element={<HomePage />} />
       <Route path="/projects" element={<ProjectListPage />} />
       <Route path="/projects/new" element={<ProjectCreatePage />} />
