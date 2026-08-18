@@ -11,7 +11,7 @@ export default function HomePage() {
         <header className="mb-8">
           <p className="text-xs font-semibold tracking-wider text-active">8월 12일 화요일</p>
           <h1 className="mt-2 text-3xl font-bold text-primary">좋은 아침이에요, 승언님</h1>
-          <p className="mt-2 text-sm text-muted">밤사이 팀의 변화를 MORROW가 정리했어요.</p>
+          <p className="mt-2 text-sm text-muted">밤사이 팀의 변화를 REMI가 정리했어요.</p>
         </header>
 
         <section className="rounded-2xl bg-primary p-6 text-white shadow-lg">

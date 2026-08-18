@@ -9,7 +9,7 @@ export default function LoginPage() {
       <section className="relative hidden overflow-hidden bg-primary-dark p-16 text-accent lg:flex lg:flex-col">
         <span className="text-2xl font-bold">MORROW.</span>
         <div className="my-auto">
-          <p className="text-xs font-semibold tracking-[.2em] text-accent/80">MORROW + AI</p>
+          <p className="text-xs font-semibold tracking-[.2em] text-accent/80">A DAY WITH MORROW</p>
           <h1 className="mt-4 text-5xl font-bold leading-tight text-white">
             밤사이 흩어진 맥락을<br />아침 한 번에.
           </h1>

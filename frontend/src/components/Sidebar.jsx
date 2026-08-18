@@ -1,5 +1,5 @@
 /**
- * 디자인 확정 시 교체 필요: 로고는 텍스트("MORROW.")로, MORROW 온라인 표시는
+ * 디자인 확정 시 교체 필요: 로고는 텍스트("MORROW.")로, REMI 온라인 표시는
  * 임시 점(dot)으로 처리되어 있습니다.
  *
  * 사용 예시:
@@ -22,12 +22,12 @@ export default function Sidebar({ user }) {
   const location = useLocation();
 
   return (
-    <aside className="hidden h-screen w-56 shrink-0 flex-col bg-primary-dark px-4 py-6 text-accent md:flex">
-      <Link to="/home" className="mb-1 text-2xl font-bold tracking-tight">
+    <aside className="hidden h-screen w-56 shrink-0 flex-col bg-primary-dark px-4 py-6 text-white md:flex">
+      <Link to="/home" className="mb-1 text-2xl font-bold tracking-tight text-white">
         MORROW<span className="text-accent">.</span>
       </Link>
       <p className="mb-7 flex items-center gap-1.5 text-xs text-accent/80">
-        <span className="h-1.5 w-1.5 rounded-full bg-accent" />MORROW 온라인
+        <span className="h-1.5 w-1.5 rounded-full bg-accent" />REMI 온라인
       </p>
 
       <nav className="flex flex-col gap-1">
@@ -42,7 +42,7 @@ export default function Sidebar({ user }) {
               className={`rounded-md px-3 py-2 text-sm transition-colors ${
                 isActive
                   ? "bg-active font-semibold text-white"
-                  : "text-accent/75 hover:bg-white/10 hover:text-accent"
+                  : "text-white hover:bg-white/10 hover:text-accent"
               }`}
             >
               {label}
@@ -52,8 +52,8 @@ export default function Sidebar({ user }) {
       </nav>
 
       {user && (
-        <div className="mt-auto border-t border-white/15 pt-4 text-xs text-accent/70">
-          <strong className="block text-accent">{user.name}</strong>
+        <div className="mt-auto border-t border-white/15 pt-4 text-xs text-white/70">
+          <strong className="block text-white">{user.name}</strong>
           <span>{user.role}</span>
         </div>
       )}
