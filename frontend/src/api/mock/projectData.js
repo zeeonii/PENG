@@ -1,4 +1,5 @@
-const STORAGE_KEY = "remi-projects";
+const STORAGE_KEY = "morrow-projects";
+const PREVIOUS_STORAGE_KEY = "remi-projects";
 
 const defaultProjects = [
   {
@@ -17,7 +18,7 @@ const defaultProjects = [
     id: "global-marketing",
     title: "글로벌 마케팅 캠페인",
     description: "서울·샌프란시스코 팀의 브랜드 론칭",
-    status: "검토중",
+    status: "진행전",
     members: ["김승언", "Sarah Lee", "라연헌"],
     updated: "2시간 전",
     tasks: 3,
@@ -41,7 +42,8 @@ const defaultProjects = [
 
 function readProjects() {
   try {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
+    const stored = window.localStorage.getItem(STORAGE_KEY)
+      ?? window.localStorage.getItem(PREVIOUS_STORAGE_KEY);
     return stored ? JSON.parse(stored) : defaultProjects;
   } catch {
     return defaultProjects;
@@ -66,6 +68,6 @@ export function createProject(newProject) {
 
 export const statusVariant = {
   진행중: "active",
-  검토중: "danger",
+  진행전: "danger",
   완료: "success",
 };
