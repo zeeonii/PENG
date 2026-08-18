@@ -26,6 +26,10 @@ spring:
               - email
 
 server:
+  # Railway 등 리버스 프록시 뒤에서 X-Forwarded-* 헤더를 신뢰하지 않으면, 프록시가 https로
+  # 받은 요청도 컨테이너 내부에는 http로 전달되어 OAuth redirect_uri가 http://로 잘못 생성된다.
+  # prod 프로파일이 아니어도 적용돼야 하므로 기본 문서에 둔다.
+  forward-headers-strategy: framework
   servlet:
     session:
       cookie:
@@ -97,8 +101,3 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
-
-# Railway 등 리버스 프록시 뒤에서 X-Forwarded-* 헤더를 신뢰하지 않으면, 프록시가 https로
-# 받은 요청도 컨테이너 내부에는 http로 전달되어 OAuth redirect_uri가 http://로 잘못 생성된다.
-server:
-  forward-headers-strategy: framework

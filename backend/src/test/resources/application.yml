@@ -1,3 +1,8 @@
+server:
+  # 운영과 같은 조건으로 돌리기 위해 여기에도 둔다. main 쪽 application.yml 은
+  # test 클래스패스의 이 파일에 통째로 가려지므로 자동으로 상속되지 않는다.
+  forward-headers-strategy: framework
+
 spring:
   application:
     name: sixpeng
