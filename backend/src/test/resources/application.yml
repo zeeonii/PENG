@@ -20,6 +20,29 @@ spring:
               - profile
               - email
 
+# test 클래스패스의 application.yml 이 main 쪽을 통째로 가리므로 여기에도 같이 둔다.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+  info:
+    build:
+      enabled: true
+    java:
+      enabled: true
+    env:
+      enabled: true
+
+info:
+  deployment:
+    commit: ${RAILWAY_GIT_COMMIT_SHA:unknown}
+    branch: ${RAILWAY_GIT_BRANCH:unknown}
+    deploymentId: ${RAILWAY_DEPLOYMENT_ID:unknown}
+
 app:
   oauth2:
     success-redirect-uri: http://localhost:5173/auth/callback
