@@ -53,6 +53,9 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
+                        // 배포 확인용 엔드포인트. health/info 만 열려 있고 민감 정보는 담기지 않는다.
+                        .requestMatchers("/actuator/health", "/actuator/info")
+                        .permitAll()
                         .requestMatchers("/accounts/oauth/**", "/oauth2/**", "/login/**", "/error")
                         .permitAll()
                         .anyRequest().authenticated())
