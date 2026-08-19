@@ -25,7 +25,7 @@ export default function Avatar({ src, name, size = "md" }) {
       <img
         src={remiAvatar}
         alt="REMI"
-        className={`${SIZE_STYLES[size]} shrink-0 rounded-full object-cover`}
+        className={`${SIZE_STYLES[size]} shrink-0 rounded-full object-contain`}
       />
     );
   }
