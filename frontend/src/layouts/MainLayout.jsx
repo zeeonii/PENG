@@ -28,7 +28,7 @@ export default function MainLayout({ children }) {
     <div className="min-h-screen bg-secondary md:flex md:h-screen">
       <Sidebar user={sidebarUser} />
       <header className="sticky top-0 z-20 flex items-center justify-between bg-primary-dark px-5 py-4 text-accent md:hidden">
-        <Link to="/home" className="text-lg font-bold">MORROW.</Link>
+        <Link to="/home" className="text-lg font-bold">MORROW<span className="text-active">.</span></Link>
         <nav className="flex gap-1">
           {mobileMenus.map((menu) => (
             <Link

@@ -38,7 +38,7 @@ export default function Sidebar({ user }) {
   return (
     <aside className="hidden h-screen w-56 shrink-0 flex-col bg-primary-dark px-4 py-6 text-white md:flex">
       <Link to="/home" className="mb-1 text-2xl font-bold tracking-tight text-white">
-        MORROW<span className="text-accent">.</span>
+        MORROW<span className="text-active">.</span>
       </Link>
       <p className="mb-7 flex items-center gap-1.5 text-xs text-accent/80">
         <span className="h-1.5 w-1.5 rounded-full bg-accent" />REMI 온라인
