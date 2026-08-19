@@ -208,14 +208,22 @@ export default function NotePage() {
                       ) : (
                         conversation.map((message) => {
                           const mine = message.senderId === user.id;
-                          const showTranslation =
-                            message.translatedText && message.translatedText !== message.originalText;
+                          // 원문/번역문 표시 설정(설정 > 프로필 · 언어 설정)을 따른다.
+                          // 최소 하나는 항상 켜져 있도록 저장 시점에 강제되므로 fallback으로 안전하다.
+                          const showOriginal = user.showOriginalText ?? true;
+                          const showTranslated = user.showTranslatedText ?? true;
+                          const primaryText = showOriginal ? message.originalText : message.translatedText;
+                          const showTranslationCaption =
+                            showOriginal &&
+                            showTranslated &&
+                            message.translatedText &&
+                            message.translatedText !== message.originalText;
                           return (
-                            <div key={message.id} className={mine ? "ml-auto max-w-sm" : "max-w-sm"}>
+                            <div key={message.id} className={mine ? "ml-auto w-fit max-w-sm" : "w-fit max-w-sm"}>
                               <div className={`rounded-xl p-3 text-sm ${mine ? "rounded-tr-none bg-primary text-white" : "rounded-tl-none bg-white text-primary shadow-sm"}`}>
-                                {message.originalText}
+                                {primaryText}
                               </div>
-                              {showTranslation && (
+                              {showTranslationCaption && (
                                 <p className={`mt-1 text-xs text-muted ${mine ? "text-right" : ""}`}>번역 · {message.translatedText}</p>
                               )}
                             </div>
