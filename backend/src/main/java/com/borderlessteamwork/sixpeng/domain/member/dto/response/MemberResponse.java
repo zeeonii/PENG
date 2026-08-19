@@ -10,7 +10,9 @@ public record MemberResponse(
         Language language,
         String country,
         String timezone,
-        String duty
+        String duty,
+        boolean showOriginalText,
+        boolean showTranslatedText
 ) {
 
     public static MemberResponse from(Member member) {
@@ -21,7 +23,9 @@ public record MemberResponse(
                 member.getLanguage(),
                 member.getCountry(),
                 member.getTimezone(),
-                member.getDuty()
+                member.getDuty(),
+                member.isShowOriginalText(),
+                member.isShowTranslatedText()
         );
     }
 }

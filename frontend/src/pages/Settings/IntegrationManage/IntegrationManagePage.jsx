@@ -20,10 +20,24 @@ import {
   connectNotion,
 } from "../../../api/integration.js";
 
+const ALL_INTEGRATION_TYPES = ["GOOGLE_MEET", "NOTION"];
 const integrationLabel = { NOTION: "Notion", GOOGLE_MEET: "Google Meet" };
 const statusLabel = { CONNECTED: "정상", DISCONNECTED: "연결 끊김" };
 const statusVariant = { CONNECTED: "success", DISCONNECTED: "danger" };
 const connectIntegration = { NOTION: connectNotion, GOOGLE_MEET: connectGoogleMeet };
+
+// 백엔드는 한 번도 연동을 시도하지 않은 서비스는 목록에서 아예 빼고 내려주므로,
+// 연동 안 된 서비스도 항상 보이도록 전체 서비스 목록 기준으로 채워 넣습니다.
+function withAllIntegrationTypes(integrations) {
+  return ALL_INTEGRATION_TYPES.map(
+    (type) =>
+      integrations.find((integration) => integration.type === type) ?? {
+        type,
+        status: "DISCONNECTED",
+        lastSyncedAt: null,
+      },
+  );
+}
 
 function formatDateTime(value) {
   if (!value) return "동기화 기록 없음";
@@ -50,7 +64,7 @@ export default function IntegrationManagePage() {
         }
         setProjectId(firstProject.id);
         return getIntegrationStatus(firstProject.id).then(({ data: statusData }) => {
-          if (!ignore) setIntegrations(statusData);
+          if (!ignore) setIntegrations(withAllIntegrationTypes(statusData));
         });
       })
       .catch((err) => {
