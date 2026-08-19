@@ -3,16 +3,17 @@
  *
  * 사용 예시:
  * <IntegrationTab projectId={project.id} />
- *
- * 디자인 확정 시 교체 필요: 서비스 아이콘은 회색 사각형 플레이스홀더입니다.
  */
 
 import { useEffect, useState } from "react";
 import Badge from "../../../../components/Badge.jsx";
+import GoogleMeetIcon from "../../../../components/icons/GoogleMeetIcon.jsx";
+import NotionIcon from "../../../../components/icons/NotionIcon.jsx";
 import { getIntegrationStatus } from "../../../../api/integration.js";
 import { syncLogs } from "../../../../api/mock/projectDetailData.js";
 
 const integrationLabel = { NOTION: "Notion", GOOGLE_MEET: "Google Meet" };
+const integrationIcon = { NOTION: NotionIcon, GOOGLE_MEET: GoogleMeetIcon };
 const statusLabel = { CONNECTED: "정상", DISCONNECTED: "연결 끊김" };
 const statusVariant = { CONNECTED: "success", DISCONNECTED: "danger" };
 
@@ -51,28 +52,30 @@ export default function IntegrationTab({ projectId }) {
   return (
     <div>
       <div className="grid gap-4 sm:grid-cols-2">
-        {integrations.map((integration) => (
-          <section
-            key={integration.type}
-            className="rounded-xl border border-border bg-white p-5"
-          >
-            <div className="flex items-center justify-between gap-3">
-              <span className="flex items-center gap-3">
-                {/* 디자인 확정 시 서비스 아이콘으로 교체 */}
-                <span className="h-8 w-8 shrink-0 rounded bg-secondary" />
-                <strong className="font-bold text-primary">
-                  {integrationLabel[integration.type]}
-                </strong>
-              </span>
-              <Badge variant={statusVariant[integration.status]}>
-                {statusLabel[integration.status]}
-              </Badge>
-            </div>
-            <p className="mt-4 text-xs text-muted">
-              마지막 동기화: {formatDateTime(integration.lastSyncedAt)}
-            </p>
-          </section>
-        ))}
+        {integrations.map((integration) => {
+          const Icon = integrationIcon[integration.type];
+          return (
+            <section
+              key={integration.type}
+              className="rounded-xl border border-border bg-white p-5"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <span className="flex items-center gap-3">
+                  <Icon className="h-8 w-8 shrink-0" />
+                  <strong className="font-bold text-primary">
+                    {integrationLabel[integration.type]}
+                  </strong>
+                </span>
+                <Badge variant={statusVariant[integration.status]}>
+                  {statusLabel[integration.status]}
+                </Badge>
+              </div>
+              <p className="mt-4 text-xs text-muted">
+                마지막 동기화: {formatDateTime(integration.lastSyncedAt)}
+              </p>
+            </section>
+          );
+        })}
         {integrations.length === 0 && (
           <p className="text-sm text-muted">연동된 서비스가 없어요.</p>
         )}
