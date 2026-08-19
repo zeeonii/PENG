@@ -2,6 +2,7 @@ package com.borderlessteamwork.sixpeng.domain.briefing.dto.response;
 
 import com.borderlessteamwork.sixpeng.domain.briefing.entity.Briefing;
 import com.borderlessteamwork.sixpeng.domain.briefing.entity.BriefingSource;
+import com.borderlessteamwork.sixpeng.domain.document.entity.DocumentSourceType;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -17,12 +18,26 @@ public class BriefingResponse {
     private LocalDateTime createdAt;
     private List<SourceItem> sources;
 
+    private long newMeetingCount;
+    private long documentChangeCount;
+
     public static BriefingResponse of(Briefing briefing, List<BriefingSource> sources) {
+        List<SourceItem> sourceItems = sources.stream().map(SourceItem::from).toList();
+
+        long meetingCount = sources.stream()
+                .filter(s -> s.getDocument().getSourceType() == DocumentSourceType.GOOGLE_MEET)
+                .count();
+        long documentCount = sources.stream()
+                .filter(s -> s.getDocument().getSourceType() == DocumentSourceType.NOTION)
+                .count();
+
         return BriefingResponse.builder()
                 .briefingId(briefing.getId())
                 .summary(briefing.getSummary())
                 .createdAt(briefing.getCreatedAt())
-                .sources(sources.stream().map(SourceItem::from).toList())
+                .sources(sourceItems)
+                .newMeetingCount(meetingCount)
+                .documentChangeCount(documentCount)
                 .build();
     }
 
