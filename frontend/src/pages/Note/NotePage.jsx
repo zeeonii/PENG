@@ -157,13 +157,19 @@ export default function NotePage() {
                   ) : (
                     conversation.map((message) => {
                       const mine = message.senderId === user.id;
-                      const showTranslation =
+                      const hasTranslation =
                         message.translatedText && message.translatedText !== message.originalText;
+                      // 설정 > 프로필의 Cultural Translation 표시 설정을 따른다.
+                      // 백엔드가 둘 다 false를 거부하지만, 혹시 몰라 방어적으로 최소 원문은 보여준다.
+                      const showOriginal = user.showOriginalText ?? true;
+                      const showTranslation = (user.showTranslatedText ?? true) && hasTranslation;
                       return (
                         <div key={message.id} className={mine ? "ml-auto max-w-sm" : "max-w-sm"}>
-                          <div className={`rounded-xl p-3 text-sm ${mine ? "rounded-tr-none bg-primary text-white" : "rounded-tl-none bg-white text-primary shadow-sm"}`}>
-                            {message.originalText}
-                          </div>
+                          {(showOriginal || !showTranslation) && (
+                            <div className={`rounded-xl p-3 text-sm ${mine ? "rounded-tr-none bg-primary text-white" : "rounded-tl-none bg-white text-primary shadow-sm"}`}>
+                              {message.originalText}
+                            </div>
+                          )}
                           {showTranslation && (
                             <p className={`mt-1 text-xs text-muted ${mine ? "text-right" : ""}`}>번역 · {message.translatedText}</p>
                           )}

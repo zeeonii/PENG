@@ -1,9 +1,6 @@
 /**
  * 설정 > 프로필 · 언어 설정
  *
- * Cultural Translation 표시 설정은 저장할 API가 명세에 없어 아직 로컬 상태로만
- * 동작합니다. (백엔드 확인 필요, 새로고침하면 초기화됩니다)
- *
  * 국가/시간대는 백엔드가 자유 텍스트로 저장합니다(예: "KR", "Asia/Seoul").
  * 와이어프레임의 한글 드롭다운과 형식이 달라 텍스트 입력으로 대체했습니다.
  */
@@ -59,6 +56,10 @@ export default function ProfilePage() {
       timezone: user.timezone ?? "",
       duty: user.duty ?? "",
     });
+    setDisplay({
+      showOriginal: user.showOriginalText ?? true,
+      showTranslated: user.showTranslatedText ?? true,
+    });
   }
 
   const updateField = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
@@ -76,7 +77,11 @@ export default function ProfilePage() {
     setError(null);
     setSaved(false);
     try {
-      await updateMe(form);
+      await updateMe({
+        ...form,
+        showOriginalText: display.showOriginal,
+        showTranslatedText: display.showTranslated,
+      });
       await refresh();
       setSaved(true);
     } catch {
@@ -168,7 +173,7 @@ export default function ProfilePage() {
 
           <p className="mt-3 text-xs leading-5 text-muted">
             원문과 번역문 중 최소 하나는 항상 표시되어야 합니다. 둘 다 끄는 설정은
-            허용되지 않습니다. (이 설정은 아직 저장되지 않습니다)
+            허용되지 않습니다.
           </p>
         </section>
 
