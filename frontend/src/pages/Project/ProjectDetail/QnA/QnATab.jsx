@@ -5,7 +5,7 @@
  * <QnATab projectId={project.id} />
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Avatar from "../../../../components/Avatar.jsx";
 import Button from "../../../../components/Button.jsx";
 import Input from "../../../../components/Input.jsx";
@@ -17,6 +17,7 @@ export default function QnATab({ projectId }) {
   const [error, setError] = useState(null);
   const [question, setQuestion] = useState("");
   const [asking, setAsking] = useState(false);
+  const historyEndRef = useRef(null);
 
   useEffect(() => {
     let ignore = false;
@@ -40,6 +41,10 @@ export default function QnATab({ projectId }) {
     };
   }, [projectId]);
 
+  useEffect(() => {
+    historyEndRef.current?.scrollIntoView({ block: "end" });
+  }, [history]);
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     const trimmed = question.trim();
@@ -59,12 +64,13 @@ export default function QnATab({ projectId }) {
   };
 
   return (
-    <div>
-      {loading && <p className="text-sm text-muted">불러오는 중...</p>}
-      {error && <p className="mb-4 text-sm text-danger">{error.message ?? "문제가 발생했어요."}</p>}
+    <div className="flex h-[560px] flex-col">
+      {error && <p className="mb-4 shrink-0 text-sm text-danger">{error.message ?? "문제가 발생했어요."}</p>}
 
-      {!loading && (
-        <div className="space-y-6">
+      <div className="flex-1 space-y-6 overflow-y-auto pr-1">
+        {loading && <p className="text-sm text-muted">불러오는 중...</p>}
+        {!loading && (
+          <>
           {history.length === 0 && (
             <p className="text-sm text-muted">아직 질문이 없어요. 궁금한 걸 물어보세요!</p>
           )}
@@ -99,10 +105,12 @@ export default function QnATab({ projectId }) {
               </div>
             </div>
           ))}
-        </div>
-      )}
+          </>
+        )}
+        <div ref={historyEndRef} />
+      </div>
 
-      <form onSubmit={handleSubmit} className="mt-8 flex gap-2">
+      <form onSubmit={handleSubmit} className="mt-4 flex shrink-0 gap-2 border-t border-border pt-4">
         <Input
           value={question}
           onChange={(event) => setQuestion(event.target.value)}

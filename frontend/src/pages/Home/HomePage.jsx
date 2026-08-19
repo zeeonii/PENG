@@ -79,11 +79,21 @@ export default function HomePage() {
             <div className="min-w-0">
               <p className="text-xs font-semibold tracking-wider text-accent">TODAY&apos;S MORROW BRIEFING</p>
               <h2 className="mt-3 text-base font-medium leading-relaxed text-white/90">
-                {briefingLoading
-                  ? ""
-                  : updatedProjects.length > 0
-                    ? `${updatedProjects.map(({ project }) => project.name).join(", ")} 프로젝트에 업데이트가 있어요.`
-                    : "아직 오늘의 브리핑이 없어요."}
+                {!briefingLoading && updatedProjects.length > 0 ? (
+                  <>
+                    {updatedProjects.map(({ project }, index) => (
+                      <span key={project.id}>
+                        {index > 0 && ", "}
+                        <strong className="font-bold">{project.name}</strong>
+                      </span>
+                    ))}
+                    {" 프로젝트에 업데이트가 있어요."}
+                  </>
+                ) : !briefingLoading ? (
+                  "아직 오늘의 브리핑이 없어요."
+                ) : (
+                  ""
+                )}
               </h2>
             </div>
             <div className="grid shrink-0 grid-cols-2 gap-6 border-t border-white/20 pt-4 text-center md:border-l md:border-t-0 md:pl-8 md:pt-0">
