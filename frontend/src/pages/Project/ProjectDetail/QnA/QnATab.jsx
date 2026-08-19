@@ -2,86 +2,114 @@
  * 프로젝트 상세 > 컨텍스트 Q&A 탭
  *
  * 사용 예시:
- * <QnATab />
- *
- * 현재 답변은 mock이며, 실제 연동 시 POST /projects/{projectId}/qna 응답으로 교체합니다.
+ * <QnATab projectId={project.id} />
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Avatar from "../../../../components/Avatar.jsx";
 import Button from "../../../../components/Button.jsx";
 import Input from "../../../../components/Input.jsx";
-import { qnaHistory } from "../../../../api/mock/projectDetailData.js";
+import { askQuestion, getQnaHistory } from "../../../../api/qna.js";
 
-const MOCK_ANSWER =
-  "아직 실제 AI 응답이 연동되지 않았습니다. 연동 후 프로젝트 맥락을 바탕으로 답변합니다.";
-
-export default function QnATab() {
-  const [history, setHistory] = useState(qnaHistory);
+export default function QnATab({ projectId }) {
+  const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [question, setQuestion] = useState("");
+  const [asking, setAsking] = useState(false);
 
-  const handleSubmit = (event) => {
+  useEffect(() => {
+    let ignore = false;
+
+    getQnaHistory(projectId)
+      .then(({ data }) => {
+        if (ignore) return;
+        // 명세는 배열을 반환하지만, 페이지네이션 응답(content 배열)일 가능성도 방어합니다.
+        setHistory(Array.isArray(data) ? data : (data.content ?? []));
+      })
+      .catch((err) => {
+        if (!ignore) setError(err);
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [projectId]);
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
     const trimmed = question.trim();
-    if (!trimmed) return;
+    if (!trimmed || asking) return;
 
-    setHistory((prev) => [
-      ...prev,
-      { question: trimmed, answer: MOCK_ANSWER, sources: [], createdAt: null },
-    ]);
-    setQuestion("");
+    setAsking(true);
+    try {
+      const { data } = await askQuestion(projectId, { question: trimmed });
+      setHistory((prev) => [...prev, data]);
+      setQuestion("");
+    } catch {
+      setError(new Error("질문 전송에 실패했어요."));
+    } finally {
+      setAsking(false);
+    }
   };
 
   return (
     <div>
-      <div className="space-y-6">
-        {history.map((item, index) => (
-          <div key={index}>
-            <p className="ml-auto w-fit max-w-lg rounded-lg bg-secondary px-4 py-2 text-sm text-primary">
-              {item.question}
-            </p>
+      {loading && <p className="text-sm text-muted">불러오는 중...</p>}
+      {error && <p className="mb-4 text-sm text-danger">{error.message ?? "문제가 발생했어요."}</p>}
 
-            <div className="mt-4 flex gap-3">
-              <Avatar name="AI 팀원" size="md" />
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-bold text-primary">
-                  AI 팀원
-                  <span className="ml-2 text-xs font-normal text-muted">
-                    방금 전
-                  </span>
-                </p>
-                <p className="mt-2 text-sm leading-6 text-muted">{item.answer}</p>
+      {!loading && (
+        <div className="space-y-6">
+          {history.length === 0 && (
+            <p className="text-sm text-muted">아직 질문이 없어요. 궁금한 걸 물어보세요!</p>
+          )}
+          {history.map((item, index) => (
+            <div key={index}>
+              <p className="ml-auto w-fit max-w-lg rounded-lg bg-secondary px-4 py-2 text-sm text-primary">
+                {item.question}
+              </p>
 
-                {item.sources.length > 0 && (
-                  <ul className="mt-3 space-y-2">
-                    {item.sources.map((source) => (
-                      <li key={source.documentId}>
-                        <a
-                          href={source.sourceUrl}
-                          className="flex items-center justify-between rounded-lg border border-border px-4 py-2.5 text-xs text-muted hover:bg-secondary"
-                        >
-                          <span>
-                            {source.occurredAt} · {source.title}
-                          </span>
-                          <span aria-hidden="true">›</span>
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+              <div className="mt-4 flex gap-3">
+                <Avatar name="레미" size="md" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold text-primary">레미</p>
+                  <p className="mt-2 text-sm leading-6 text-muted">{item.answer}</p>
+
+                  {item.sources?.length > 0 && (
+                    <ul className="mt-3 space-y-2">
+                      {item.sources.map((source) => (
+                        <li key={source.documentId}>
+                          <a
+                            href={source.sourceUrl}
+                            className="flex items-center justify-between rounded-lg border border-border px-4 py-2.5 text-xs text-muted hover:bg-secondary"
+                          >
+                            <span>{source.title}</span>
+                            <span aria-hidden="true">›</span>
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="mt-8 flex gap-2">
         <Input
           value={question}
           onChange={(event) => setQuestion(event.target.value)}
           placeholder="이 프로젝트에 대해 질문하세요"
+          disabled={asking}
         />
-        <Button type="submit">전송</Button>
+        <Button type="submit" disabled={asking}>
+          {asking ? "전송 중..." : "전송"}
+        </Button>
       </form>
     </div>
   );

@@ -3,7 +3,8 @@ import MainLayout from "../../layouts/MainLayout.jsx";
 import Avatar from "../../components/Avatar.jsx";
 import Button from "../../components/Button.jsx";
 
-const STORAGE_KEY = "remi-messages";
+const STORAGE_KEY = "morrow-messages";
+const PREVIOUS_STORAGE_KEY = "remi-messages";
 const contacts = [
   { name: "김지원", role: "백엔드 개발 · 한국(KST)", language: "한국어" },
   { name: "Sarah Lee", role: "디자이너 · 미국(PST)", language: "English" },
@@ -25,7 +26,9 @@ const initialMessages = {
 
 function loadMessages() {
   try {
-    return JSON.parse(window.localStorage.getItem(STORAGE_KEY)) ?? initialMessages;
+    const stored = window.localStorage.getItem(STORAGE_KEY)
+      ?? window.localStorage.getItem(PREVIOUS_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : initialMessages;
   } catch {
     return initialMessages;
   }

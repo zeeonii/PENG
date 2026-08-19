@@ -6,6 +6,7 @@ import com.borderlessteamwork.sixpeng.domain.member.entity.Member;
 import com.borderlessteamwork.sixpeng.domain.member.repository.MemberRepository;
 import com.borderlessteamwork.sixpeng.domain.project.entity.Project;
 import com.borderlessteamwork.sixpeng.domain.project.repository.ProjectRepository;
+import com.borderlessteamwork.sixpeng.domain.qna.dto.response.QnaHistoryPageResponse;
 import com.borderlessteamwork.sixpeng.domain.qna.dto.response.QnaResponse;
 import com.borderlessteamwork.sixpeng.domain.qna.entity.QnaHistory;
 import com.borderlessteamwork.sixpeng.domain.qna.entity.QnaSource;
@@ -14,6 +15,8 @@ import com.borderlessteamwork.sixpeng.domain.qna.repository.QnaSourceRepository;
 import com.borderlessteamwork.sixpeng.global.exception.BusinessException;
 import com.borderlessteamwork.sixpeng.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -75,29 +78,38 @@ public class QnaService {
                             .qnaHistory(qnaHistory)
                             .document(doc)
                             .build());
-                    return QnaResponse.SourceItem.builder()
-                            .documentId(doc.getId())
-                            .title(doc.getTitle())
-                            .sourceUrl(doc.getSourceUrl())
-                            .build();
+                    return toSourceItem(doc);
                 })
                 .toList();
 
         return QnaResponse.of(qnaHistory, sourceItems);
     }
 
-    public List<QnaResponse> getHistory(Long projectId) {
-        return qnaHistoryRepository.findByProjectIdOrderByCreatedAtDesc(projectId).stream()
+    public QnaHistoryPageResponse getHistory(Long projectId, int page, int size) {
+        Page<QnaHistory> historyPage = qnaHistoryRepository.findByProjectIdOrderByCreatedAtDesc(
+                projectId, PageRequest.of(page, size));
+
+        List<QnaResponse> content = historyPage.getContent().stream()
                 .map(history -> {
                     List<QnaResponse.SourceItem> sources = qnaSourceRepository.findByQnaHistoryId(history.getId()).stream()
-                            .map(qs -> QnaResponse.SourceItem.builder()
-                                    .documentId(qs.getDocument().getId())
-                                    .title(qs.getDocument().getTitle())
-                                    .sourceUrl(qs.getDocument().getSourceUrl())
-                                    .build())
+                            .map(qs -> toSourceItem(qs.getDocument()))
                             .toList();
                     return QnaResponse.of(history, sources);
                 })
                 .toList();
+
+        return QnaHistoryPageResponse.builder()
+                .content(content)
+                .hasNext(historyPage.hasNext())
+                .build();
+    }
+
+    private QnaResponse.SourceItem toSourceItem(Document document) {
+        return QnaResponse.SourceItem.builder()
+                .documentId(document.getId())
+                .title(document.getTitle())
+                .sourceType(document.getSourceType().name())
+                .sourceUrl(document.getSourceUrl())
+                .build();
     }
 }

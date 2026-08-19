@@ -3,15 +3,15 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: "#5B3CC4",
-        "primary-dark": "#30215F",
-        secondary: "#F3F0FF",
-        border: "#DED8F7",
-        accent: "#DFFF65",
+        primary: "#1B2A4A",
+        "primary-dark": "#16233D",
+        secondary: "#F8F9FB",
+        border: "#E2E5EA",
+        accent: "#FFD97D",
         success: "#4E9F66",
-        active: "#5B3CC4",
+        active: "#FF8C5A",
         danger: "#D45B73",
-        muted: "#756E90",
+        muted: "#6B7280",
       },
     },
   },

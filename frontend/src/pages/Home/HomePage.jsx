@@ -11,13 +11,13 @@ export default function HomePage() {
         <header className="mb-8">
           <p className="text-xs font-semibold tracking-wider text-active">8월 12일 화요일</p>
           <h1 className="mt-2 text-3xl font-bold text-primary">좋은 아침이에요, 승언님</h1>
-          <p className="mt-2 text-sm text-muted">밤사이 팀의 변화를 레미가 정리했어요.</p>
+          <p className="mt-2 text-sm text-muted">밤사이 팀의 변화를 REMI가 정리했어요.</p>
         </header>
 
         <section className="rounded-2xl bg-primary p-6 text-white shadow-lg">
           <div className="flex flex-col justify-between gap-6 md:flex-row">
             <div>
-              <p className="text-xs font-semibold tracking-wider text-accent">TODAY&apos;S REMI BRIEFING</p>
+              <p className="text-xs font-semibold tracking-wider text-accent">TODAY&apos;S MORROW BRIEFING</p>
               <h2 className="mt-3 text-2xl font-bold">로그인 정책이 변경되었습니다.</h2>
               <p className="mt-2 text-sm text-white/75">새 인증 방식이 적용되며 담당 화면 2개에 영향이 있어요.</p>
               <Link to="/projects/teamline" className="mt-5 inline-block border-b border-accent/60 pb-1 text-sm font-semibold text-accent">

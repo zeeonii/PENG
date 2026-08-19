@@ -10,16 +10,16 @@ import java.util.List;
 
 @Getter
 @Builder
-public class BriefingDetailResponse {
+public class BriefingResponse {
 
-    private Long id;
+    private Long briefingId;
     private String summary;
     private LocalDateTime createdAt;
     private List<SourceItem> sources;
 
-    public static BriefingDetailResponse of(Briefing briefing, List<BriefingSource> sources) {
-        return BriefingDetailResponse.builder()
-                .id(briefing.getId())
+    public static BriefingResponse of(Briefing briefing, List<BriefingSource> sources) {
+        return BriefingResponse.builder()
+                .briefingId(briefing.getId())
                 .summary(briefing.getSummary())
                 .createdAt(briefing.getCreatedAt())
                 .sources(sources.stream().map(SourceItem::from).toList())

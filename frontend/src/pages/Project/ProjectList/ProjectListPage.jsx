@@ -7,7 +7,7 @@ import Button from "../../../components/Button.jsx";
 import Input from "../../../components/Input.jsx";
 import { projects, statusVariant } from "../../../api/mock/projectData.js";
 
-const filters = ["전체", "진행중", "검토중", "완료"];
+const filters = ["전체", "진행전", "진행중", "완료"];
 
 export default function ProjectListPage() {
   const [keyword, setKeyword] = useState("");
@@ -49,8 +49,8 @@ export default function ProjectListPage() {
                 onClick={() => setSelectedFilter(filter)}
                 className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
                   selectedFilter === filter
-                    ? "border-primary bg-primary text-accent"
-                    : "border-border bg-white text-muted hover:border-primary hover:text-primary"
+                    ? "border-active bg-active text-white"
+                    : "border-border bg-white text-muted hover:border-active hover:text-primary"
                 }`}
               >
                 {filter}
@@ -70,7 +70,7 @@ export default function ProjectListPage() {
                 type="button"
                 onClick={() => setView("list")}
                 className={`rounded px-3 py-1.5 text-xs font-medium ${
-                  view === "list" ? "bg-primary text-accent" : "text-muted"
+                  view === "list" ? "bg-active text-white" : "text-muted"
                 }`}
               >
                 리스트
@@ -79,7 +79,7 @@ export default function ProjectListPage() {
                 type="button"
                 onClick={() => setView("card")}
                 className={`rounded px-3 py-1.5 text-xs font-medium ${
-                  view === "card" ? "bg-primary text-accent" : "text-muted"
+                  view === "card" ? "bg-active text-white" : "text-muted"
                 }`}
               >
                 카드
