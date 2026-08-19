@@ -25,7 +25,7 @@ export default function MainLayout({ children }) {
   const sidebarUser = user ? { name: user.name, role: user.duty } : null;
 
   return (
-    <div className="min-h-screen bg-secondary md:flex">
+    <div className="min-h-screen bg-secondary md:flex md:h-screen">
       <Sidebar user={sidebarUser} />
       <header className="sticky top-0 z-20 flex items-center justify-between bg-primary-dark px-5 py-4 text-accent md:hidden">
         <Link to="/home" className="text-lg font-bold">MORROW.</Link>
@@ -46,7 +46,7 @@ export default function MainLayout({ children }) {
           ))}
         </nav>
       </header>
-      <main className="min-w-0 flex-1 overflow-y-auto p-5 md:p-8">{children}</main>
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto p-5 md:p-8">{children}</main>
     </div>
   );
 }
