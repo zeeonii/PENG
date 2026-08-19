@@ -6,6 +6,7 @@ import Badge from "../../../components/Badge.jsx";
 import Button from "../../../components/Button.jsx";
 import Input from "../../../components/Input.jsx";
 import { getProjects, getProjectMembers } from "../../../api/project.js";
+import { memberDisplayName } from "../../../utils/member.js";
 
 const filters = ["전체", "진행전", "진행중", "완료"];
 
@@ -160,7 +161,7 @@ export default function ProjectListPage() {
                   <div className="flex -space-x-2">
                     {project.members.slice(0, 3).map((member) => (
                       <span key={member.memberId} className="rounded-full bg-white ring-2 ring-white">
-                        <Avatar name={member.name} size="sm" />
+                        <Avatar name={memberDisplayName(member)} size="sm" />
                       </span>
                     ))}
                   </div>
@@ -182,7 +183,7 @@ export default function ProjectListPage() {
                 <div className="mt-4 flex -space-x-2 border-t border-border pt-4">
                   {project.members.slice(0, 3).map((member) => (
                     <span key={member.memberId} className="rounded-full bg-white ring-2 ring-white">
-                      <Avatar name={member.name} size="sm" />
+                      <Avatar name={memberDisplayName(member)} size="sm" />
                     </span>
                   ))}
                 </div>

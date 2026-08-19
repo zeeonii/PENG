@@ -73,9 +73,9 @@ export default function QnATab({ projectId }) {
               </p>
 
               <div className="mt-4 flex gap-3">
-                <Avatar name="레미" size="md" />
+                <Avatar name="REMI" size="md" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-bold text-primary">레미</p>
+                  <p className="text-sm font-bold text-primary">REMI</p>
                   <p className="mt-2 text-sm leading-6 text-muted">{item.answer}</p>
 
                   {item.sources?.length > 0 && (

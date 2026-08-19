@@ -11,11 +11,13 @@ import MembersTab from "../Members/MembersTab.jsx";
 import IntegrationTab from "../Integration/IntegrationTab.jsx";
 import { getProject, getProjectMembers } from "../../../../api/project.js";
 import { getTodayBriefing } from "../../../../api/briefing.js";
+import { getRecentActivities } from "../../../../api/activity.js";
+import { memberDisplayName } from "../../../../utils/member.js";
 
 // 명세에 status/description/기간 필드가 없어 안전하게 가드 처리했습니다.
 const statusVariant = { 진행중: "active", 검토중: "danger", 완료: "success" };
 
-function ProjectOverview({ members, briefing }) {
+function ProjectOverview({ members, briefing, activities }) {
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_220px]">
       <div className="rounded-xl border border-border bg-secondary/40 p-6">
@@ -41,9 +43,9 @@ function ProjectOverview({ members, briefing }) {
         <div className="mt-4 space-y-3">
           {members.map((member) => (
             <div key={member.memberId} className="flex items-center gap-2">
-              <Avatar name={member.name} size="sm" />
+              <Avatar name={memberDisplayName(member)} size="sm" />
               <div>
-                <p className="text-sm font-medium text-primary">{member.name}</p>
+                <p className="text-sm font-medium text-primary">{memberDisplayName(member)}</p>
                 <p className="text-xs text-muted">{member.role ?? "프로젝트 팀원"}</p>
               </div>
             </div>
@@ -52,14 +54,19 @@ function ProjectOverview({ members, briefing }) {
         </div>
       </aside>
 
-      {/* 최근 활동을 조회하는 API가 명세에 없어 아직 mock 문구입니다. */}
       <section className="lg:col-span-2">
         <h2 className="mb-3 text-base font-semibold text-primary">최근 활동</h2>
-        <ul className="overflow-hidden rounded-xl border border-border bg-white divide-y divide-border">
-          <li className="px-5 py-4 text-sm text-primary">회의록이 업데이트되었습니다.</li>
-          <li className="px-5 py-4 text-sm text-primary">Notion 문서에 온보딩 가이드가 추가되었습니다.</li>
-          <li className="px-5 py-4 text-sm text-primary">인증 방식 관련 결정사항이 기록되었습니다.</li>
-        </ul>
+        {activities.length > 0 ? (
+          <ul className="overflow-hidden rounded-xl border border-border bg-white divide-y divide-border">
+            {activities.map((activity, index) => (
+              <li key={index} className="px-5 py-4 text-sm text-primary">{activity.description}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="rounded-xl border border-dashed border-border px-5 py-8 text-center text-sm text-muted">
+            아직 최근 활동이 없어요.
+          </p>
+        )}
       </section>
     </div>
   );
@@ -74,6 +81,7 @@ export default function ProjectHomePage() {
   const [project, setProject] = useState(null);
   const [members, setMembers] = useState([]);
   const [briefing, setBriefing] = useState(null);
+  const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -84,12 +92,14 @@ export default function ProjectHomePage() {
       getProject(projectId),
       getProjectMembers(projectId),
       getTodayBriefing(projectId).catch(() => ({ data: null })),
+      getRecentActivities(projectId).catch(() => ({ data: [] })),
     ])
-      .then(([projectRes, membersRes, briefingRes]) => {
+      .then(([projectRes, membersRes, briefingRes, activitiesRes]) => {
         if (ignore) return;
         setProject(projectRes.data);
         setMembers(membersRes.data);
         setBriefing(briefingRes.data);
+        setActivities(activitiesRes.data);
       })
       .catch((err) => {
         if (!ignore) setError(err);
@@ -146,7 +156,7 @@ export default function ProjectHomePage() {
           tabs={[
             {
               label: "홈",
-              content: <ProjectOverview members={members} briefing={briefing} />,
+              content: <ProjectOverview members={members} briefing={briefing} activities={activities} />,
             },
             {
               label: "AI 브리핑 상세",

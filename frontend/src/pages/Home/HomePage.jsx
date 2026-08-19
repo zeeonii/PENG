@@ -5,6 +5,7 @@ import Avatar from "../../components/Avatar.jsx";
 import Badge from "../../components/Badge.jsx";
 import { getProjects, getProjectMembers } from "../../api/project.js";
 import { useUser } from "../../contexts/UserContext.jsx";
+import { memberDisplayName } from "../../utils/member.js";
 
 const todayLabel = new Intl.DateTimeFormat("ko-KR", {
   month: "long",
@@ -94,7 +95,7 @@ export default function HomePage() {
                 )}
                 <span className="hidden -space-x-2 sm:flex">
                   {project.members.slice(0, 3).map((member) => (
-                    <Avatar key={member.memberId} name={member.name} size="sm" />
+                    <Avatar key={member.memberId} name={memberDisplayName(member)} size="sm" />
                   ))}
                 </span>
               </Link>
