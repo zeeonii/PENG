@@ -24,8 +24,9 @@ export default function QnATab({ projectId }) {
     getQnaHistory(projectId)
       .then(({ data }) => {
         if (ignore) return;
-        // 명세는 배열을 반환하지만, 페이지네이션 응답(content 배열)일 가능성도 방어합니다.
-        setHistory(Array.isArray(data) ? data : (data.content ?? []));
+        // 응답이 ApiResponse<QnaHistoryPageResponse>로 감싸져 있어
+        // 실제 목록은 data.data.content에 들어있다.
+        setHistory(data.data?.content ?? []);
       })
       .catch((err) => {
         if (!ignore) setError(err);
@@ -47,7 +48,8 @@ export default function QnATab({ projectId }) {
     setAsking(true);
     try {
       const { data } = await askQuestion(projectId, { question: trimmed });
-      setHistory((prev) => [...prev, data]);
+      // 응답이 ApiResponse<QnaResponse>로 감싸져 있어 실제 항목은 data.data에 들어있다.
+      setHistory((prev) => [...prev, data.data]);
       setQuestion("");
     } catch {
       setError(new Error("질문 전송에 실패했어요."));
