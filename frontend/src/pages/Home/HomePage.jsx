@@ -73,7 +73,7 @@ export default function HomePage() {
           <div className="flex flex-col justify-between gap-6 md:flex-row">
             <div>
               <p className="text-xs font-semibold tracking-wider text-accent">TODAY&apos;S MORROW BRIEFING</p>
-              <h2 className="mt-3 text-2xl font-bold">
+              <h2 className="mt-3 text-base font-medium leading-relaxed text-white/90">
                 {briefingLoading ? "" : briefing ? briefing.summary : "아직 오늘의 브리핑이 없어요."}
               </h2>
             </div>
