@@ -21,7 +21,7 @@ npm run lint
 | --- | --- |
 | `VITE_API_BASE_URL` | 백엔드 API 주소 |
 
-기본값은 배포된 백엔드(`https://peng-production-54a9.up.railway.app`)입니다. 로컬에서 백엔드를 직접 실행할 때만 `http://localhost:8080`으로 바꿔주세요.
+기본값은 배포된 백엔드(`https://morrow.p-e.kr`)입니다. 로컬에서 백엔드를 직접 실행할 때만 `http://localhost:8080`으로 바꿔주세요.
 
 Vite는 빌드 시점에 이 값을 코드에 포함시키므로, 값을 바꾼 뒤에는 개발 서버를 다시 실행해야 반영됩니다. 배포 환경에서는 Cloudflare Pages의 환경 변수 설정을 사용합니다.
 
