@@ -71,15 +71,15 @@ export default function HomePage() {
 
         <section className="rounded-2xl bg-primary p-6 text-white shadow-lg">
           <div className="flex flex-col justify-between gap-6 md:flex-row">
-            <div>
+            <div className="min-w-0">
               <p className="text-xs font-semibold tracking-wider text-accent">TODAY&apos;S MORROW BRIEFING</p>
               <h2 className="mt-3 text-base font-medium leading-relaxed text-white/90">
                 {briefingLoading ? "" : briefing ? briefing.summary : "아직 오늘의 브리핑이 없어요."}
               </h2>
             </div>
-            <div className="grid grid-cols-2 gap-5 border-t border-white/20 pt-4 text-center md:border-l md:border-t-0 md:pl-6 md:pt-0">
-              <span><strong className="block text-xl">{briefing?.newMeetingCount ?? 0}</strong><small className="text-white/70">새 회의록</small></span>
-              <span><strong className="block text-xl">{briefing?.documentChangeCount ?? 0}</strong><small className="text-white/70">문서 변경</small></span>
+            <div className="grid shrink-0 grid-cols-2 gap-6 border-t border-white/20 pt-4 text-center md:border-l md:border-t-0 md:pl-8 md:pt-0">
+              <span><strong className="block text-xl">{briefing?.newMeetingCount ?? 0}</strong><small className="whitespace-nowrap text-white/70">새 회의록</small></span>
+              <span><strong className="block text-xl">{briefing?.documentChangeCount ?? 0}</strong><small className="whitespace-nowrap text-white/70">문서 변경</small></span>
             </div>
           </div>
         </section>
