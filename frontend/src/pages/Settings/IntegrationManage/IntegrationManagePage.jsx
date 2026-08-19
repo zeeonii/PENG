@@ -12,19 +12,13 @@
 import { useEffect, useState } from "react";
 import SettingsLayout from "../SettingsLayout.jsx";
 import Badge from "../../../components/Badge.jsx";
-import Button from "../../../components/Button.jsx";
 import { getProjects } from "../../../api/project.js";
-import {
-  getIntegrationStatus,
-  connectGoogleMeet,
-  connectNotion,
-} from "../../../api/integration.js";
+import { getIntegrationStatus } from "../../../api/integration.js";
 
 const ALL_INTEGRATION_TYPES = ["GOOGLE_MEET", "NOTION"];
 const integrationLabel = { NOTION: "Notion", GOOGLE_MEET: "Google Meet" };
 const statusLabel = { CONNECTED: "정상", DISCONNECTED: "연결 끊김" };
 const statusVariant = { CONNECTED: "success", DISCONNECTED: "danger" };
-const connectIntegration = { NOTION: connectNotion, GOOGLE_MEET: connectGoogleMeet };
 
 // 백엔드는 한 번도 연동을 시도하지 않은 서비스는 목록에서 아예 빼고 내려주므로,
 // 연동 안 된 서비스도 항상 보이도록 전체 서비스 목록 기준으로 채워 넣습니다.
@@ -49,7 +43,6 @@ export default function IntegrationManagePage() {
   const [integrations, setIntegrations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [connecting, setConnecting] = useState(null);
 
   useEffect(() => {
     let ignore = false;
@@ -79,17 +72,6 @@ export default function IntegrationManagePage() {
     };
   }, []);
 
-  const handleConnect = async (type) => {
-    if (!projectId) return;
-    setConnecting(type);
-    try {
-      await connectIntegration[type](projectId);
-    } catch {
-      setError(new Error("연동을 시작하지 못했어요."));
-      setConnecting(null);
-    }
-  };
-
   return (
     <SettingsLayout>
       <h1 className="text-2xl font-bold text-primary">연동 관리</h1>
@@ -116,18 +98,9 @@ export default function IntegrationManagePage() {
                   </strong>
                 </span>
 
-                <span className="flex items-center gap-3">
-                  <Badge variant={statusVariant[integration.status]}>
-                    {statusLabel[integration.status]}
-                  </Badge>
-                  <Button
-                    variant="secondary"
-                    onClick={() => handleConnect(integration.type)}
-                    disabled={connecting === integration.type}
-                  >
-                    {connecting === integration.type ? "연결 중..." : "재연결"}
-                  </Button>
-                </span>
+                <Badge variant={statusVariant[integration.status]}>
+                  {statusLabel[integration.status]}
+                </Badge>
               </div>
 
               <p className="mt-4 text-xs text-muted">
