@@ -20,7 +20,7 @@ const statusVariant = { 진행중: "active", 진행전: "default", 완료: "succ
 export default function HomePage() {
   const { user } = useUser();
   const [projects, setProjects] = useState([]);
-  const [briefing, setBriefing] = useState(null);
+  const [updatedProjects, setUpdatedProjects] = useState([]);
   const [briefingLoading, setBriefingLoading] = useState(true);
 
   useEffect(() => {
@@ -37,14 +37,16 @@ export default function HomePage() {
         );
         if (!ignore) setProjects(withMembers);
 
-        // 홈 화면엔 프로젝트 개념이 없어 첫 번째 프로젝트 기준으로 오늘의 브리핑을 보여줍니다.
-        const firstProject = data[0];
-        if (firstProject) {
-          // /briefings/today는 목록(ApiResponse<List<BriefingResponse>>)을 반환한다.
-          // 오늘자는 최대 1건이라 첫 번째 항목만 꺼내 쓴다.
-          const { data: briefingData } = await getTodayBriefing(firstProject.id).catch(() => ({ data: { data: [] } }));
-          if (!ignore) setBriefing(briefingData.data?.[0] ?? null);
-        }
+        // 홈 화면엔 프로젝트 개념이 없어, 오늘 브리핑이 생성된 프로젝트를 전부 모아 보여줍니다.
+        // /briefings/today는 목록(ApiResponse<List<BriefingResponse>>)을 반환하며 오늘자는 최대 1건이다.
+        const results = await Promise.all(
+          data.map((project) =>
+            getTodayBriefing(project.id)
+              .then(({ data: res }) => ({ project, briefing: res.data?.[0] ?? null }))
+              .catch(() => ({ project, briefing: null })),
+          ),
+        );
+        if (!ignore) setUpdatedProjects(results.filter((result) => result.briefing));
       })
       .catch(() => {
         if (!ignore) setProjects([]);
@@ -57,6 +59,9 @@ export default function HomePage() {
       ignore = true;
     };
   }, []);
+
+  const newMeetingCount = updatedProjects.reduce((sum, { briefing }) => sum + (briefing.newMeetingCount ?? 0), 0);
+  const documentChangeCount = updatedProjects.reduce((sum, { briefing }) => sum + (briefing.documentChangeCount ?? 0), 0);
 
   return (
     <MainLayout>
@@ -74,12 +79,16 @@ export default function HomePage() {
             <div className="min-w-0">
               <p className="text-xs font-semibold tracking-wider text-accent">TODAY&apos;S MORROW BRIEFING</p>
               <h2 className="mt-3 text-base font-medium leading-relaxed text-white/90">
-                {briefingLoading ? "" : briefing ? briefing.summary : "아직 오늘의 브리핑이 없어요."}
+                {briefingLoading
+                  ? ""
+                  : updatedProjects.length > 0
+                    ? `${updatedProjects.map(({ project }) => project.name).join(", ")} 프로젝트에 업데이트가 있어요.`
+                    : "아직 오늘의 브리핑이 없어요."}
               </h2>
             </div>
             <div className="grid shrink-0 grid-cols-2 gap-6 border-t border-white/20 pt-4 text-center md:border-l md:border-t-0 md:pl-8 md:pt-0">
-              <span><strong className="block text-xl">{briefing?.newMeetingCount ?? 0}</strong><small className="whitespace-nowrap text-white/70">새 회의록</small></span>
-              <span><strong className="block text-xl">{briefing?.documentChangeCount ?? 0}</strong><small className="whitespace-nowrap text-white/70">문서 변경</small></span>
+              <span><strong className="block text-xl">{newMeetingCount}</strong><small className="whitespace-nowrap text-white/70">새 회의록</small></span>
+              <span><strong className="block text-xl">{documentChangeCount}</strong><small className="whitespace-nowrap text-white/70">문서 변경</small></span>
             </div>
           </div>
         </section>
