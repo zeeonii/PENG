@@ -78,15 +78,16 @@ export default function NotePage() {
   );
 
   const conversation = useMemo(() => {
-    if (!activeId || !user) return [];
+    if (!activeId || !user || !selectedProjectId) return [];
     return messages
       .filter(
         (message) =>
-          (message.senderId === user.id && message.receiverId === activeId) ||
-          (message.senderId === activeId && message.receiverId === user.id),
+          message.projectId === selectedProjectId &&
+          ((message.senderId === user.id && message.receiverId === activeId) ||
+            (message.senderId === activeId && message.receiverId === user.id)),
       )
       .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-  }, [messages, activeId, user]);
+  }, [messages, activeId, user, selectedProjectId]);
 
   useEffect(() => {
     const unread = conversation.filter((message) => !message.isRead && message.receiverId === user?.id);
