@@ -183,7 +183,9 @@ export default function NotePage() {
                       <Avatar name={contactLabel(contact)} />
                       <span>
                         <strong className="block text-sm text-primary">{contactLabel(contact)}</strong>
-                        {contact.role && <small className="text-xs text-muted">{contact.role}</small>}
+                        {contact.role && !contact.isAiTeammate && (
+                          <small className="text-xs text-muted">{contact.role}</small>
+                        )}
                       </span>
                     </button>
                   ))}
