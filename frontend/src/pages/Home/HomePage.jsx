@@ -70,9 +70,6 @@ export default function HomePage() {
               <h2 className="mt-3 text-2xl font-bold">
                 {briefing ? briefing.summary : "아직 오늘의 브리핑이 없어요."}
               </h2>
-              <Link to="/projects/teamline" className="mt-5 inline-block border-b border-accent/60 pb-1 text-sm font-semibold text-accent">
-                브리핑 자세히 보기 →
-              </Link>
             </div>
             <div className="grid grid-cols-2 gap-5 border-t border-white/20 pt-4 text-center md:border-l md:border-t-0 md:pl-6 md:pt-0">
               <span><strong className="block text-xl">{briefing?.newMeetingCount ?? 0}</strong><small className="text-white/70">새 회의록</small></span>
