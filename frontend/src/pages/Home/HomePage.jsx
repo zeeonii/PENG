@@ -4,6 +4,7 @@ import MainLayout from "../../layouts/MainLayout.jsx";
 import Avatar from "../../components/Avatar.jsx";
 import Badge from "../../components/Badge.jsx";
 import { getProjects, getProjectMembers } from "../../api/project.js";
+import { getTodayBriefing } from "../../api/briefing.js";
 import { useUser } from "../../contexts/UserContext.jsx";
 import { memberDisplayName } from "../../utils/member.js";
 
@@ -19,6 +20,7 @@ const statusVariant = { 진행중: "active", 진행전: "default", 완료: "succ
 export default function HomePage() {
   const { user } = useUser();
   const [projects, setProjects] = useState([]);
+  const [briefing, setBriefing] = useState(null);
 
   useEffect(() => {
     let ignore = false;
@@ -33,6 +35,13 @@ export default function HomePage() {
           ),
         );
         if (!ignore) setProjects(withMembers);
+
+        // 홈 화면엔 프로젝트 개념이 없어 첫 번째 프로젝트 기준으로 오늘의 브리핑을 보여줍니다.
+        const firstProject = data[0];
+        if (firstProject) {
+          const { data: briefingData } = await getTodayBriefing(firstProject.id).catch(() => ({ data: null }));
+          if (!ignore) setBriefing(briefingData);
+        }
       })
       .catch(() => {
         if (!ignore) setProjects([]);
@@ -58,16 +67,16 @@ export default function HomePage() {
           <div className="flex flex-col justify-between gap-6 md:flex-row">
             <div>
               <p className="text-xs font-semibold tracking-wider text-accent">TODAY&apos;S MORROW BRIEFING</p>
-              <h2 className="mt-3 text-2xl font-bold">로그인 정책이 변경되었습니다.</h2>
-              <p className="mt-2 text-sm text-white/75">새 인증 방식이 적용되며 담당 화면 2개에 영향이 있어요.</p>
+              <h2 className="mt-3 text-2xl font-bold">
+                {briefing ? briefing.summary : "아직 오늘의 브리핑이 없어요."}
+              </h2>
               <Link to="/projects/teamline" className="mt-5 inline-block border-b border-accent/60 pb-1 text-sm font-semibold text-accent">
                 브리핑 자세히 보기 →
               </Link>
             </div>
-            <div className="grid grid-cols-3 gap-5 border-t border-white/20 pt-4 text-center md:border-l md:border-t-0 md:pl-6 md:pt-0">
-              <span><strong className="block text-xl">2</strong><small className="text-white/70">영향 작업</small></span>
-              <span><strong className="block text-xl">3</strong><small className="text-white/70">새 회의록</small></span>
-              <span><strong className="block text-xl">1</strong><small className="text-white/70">문서 변경</small></span>
+            <div className="grid grid-cols-2 gap-5 border-t border-white/20 pt-4 text-center md:border-l md:border-t-0 md:pl-6 md:pt-0">
+              <span><strong className="block text-xl">{briefing?.newMeetingCount ?? 0}</strong><small className="text-white/70">새 회의록</small></span>
+              <span><strong className="block text-xl">{briefing?.documentChangeCount ?? 0}</strong><small className="text-white/70">문서 변경</small></span>
             </div>
           </div>
         </section>
