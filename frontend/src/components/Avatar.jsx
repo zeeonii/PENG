@@ -7,6 +7,8 @@
  * <Avatar /> // 이미지도 이름도 없으면 회색 원
  */
 
+import remiAvatar from "../assets/REMI.png";
+
 const SIZE_STYLES = {
   sm: "h-6 w-6 text-xs",
   md: "h-8 w-8 text-sm",
@@ -18,6 +20,16 @@ function getInitial(name) {
 }
 
 export default function Avatar({ src, name, size = "md" }) {
+  if (name === "REMI") {
+    return (
+      <img
+        src={remiAvatar}
+        alt="REMI"
+        className={`${SIZE_STYLES[size]} shrink-0 rounded-full object-cover`}
+      />
+    );
+  }
+
   if (src) {
     return (
       <img
