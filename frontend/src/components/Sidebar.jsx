@@ -9,7 +9,9 @@
  * user는 { name, role } 형태이며, MainLayout을 통해 전달합니다.
  */
 
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { logout } from "../api/member.js";
+import { useUser } from "../contexts/UserContext.jsx";
 
 const MENU_ITEMS = [
   { label: "홈", path: "/home" },
@@ -20,6 +22,18 @@ const MENU_ITEMS = [
 
 export default function Sidebar({ user }) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { clear } = useUser();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch {
+      // 세션이 이미 만료된 경우에도 로컬 상태는 정리합니다.
+    }
+    clear();
+    navigate("/login");
+  };
 
   return (
     <aside className="hidden h-screen w-56 shrink-0 flex-col bg-primary-dark px-4 py-6 text-white md:flex">
@@ -52,9 +66,18 @@ export default function Sidebar({ user }) {
       </nav>
 
       {user && (
-        <div className="mt-auto border-t border-white/15 pt-4 text-xs text-white/70">
-          <strong className="block text-white">{user.name}</strong>
-          <span>{user.role}</span>
+        <div className="mt-auto flex items-center justify-between gap-2 border-t border-white/15 pt-4 text-xs text-white/70">
+          <div className="min-w-0">
+            <strong className="block truncate text-white">{user.name}</strong>
+            <span>{user.role}</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="shrink-0 rounded px-2 py-1 text-xs text-white/70 hover:bg-white/10 hover:text-white"
+          >
+            로그아웃
+          </button>
         </div>
       )}
     </aside>
