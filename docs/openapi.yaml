@@ -302,6 +302,27 @@ paths:
               schema:
                 $ref: '#/components/schemas/Briefing'
 
+  /projects/{projectId}/activities:
+    get:
+      tags: [activities]
+      summary: 최근 활동 피드 조회
+      description: |
+        프로젝트 홈 화면용. document(Notion/Google Meet 수집)와 briefing(브리핑 생성) 이벤트를
+        발생 시각 기준 최신순으로 합쳐 최대 10건 반환한다.
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: 조회 성공
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Activity'
+        '403':
+          description: 참여자 아님 (P002)
+
   /projects/{projectId}/qna:
     post:
       tags: [qna]
@@ -710,6 +731,18 @@ components:
           type: string
         reason:
           type: string
+
+    Activity:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [DOCUMENT_COLLECTED, BRIEFING_GENERATED]
+        description:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
 
     Briefing:
       type: object
