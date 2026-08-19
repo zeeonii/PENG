@@ -11,10 +11,17 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      # backend 가 이 헬스체크를 기다렸다 뜨므로(depends_on: service_healthy)
+      # 반드시 확실하게 통과해야 한다.
+      #  - 자격증명을 넘긴다: 인증 없이 ping 하면 access denied 로 떨어질 수 있다.
+      #  - -h 127.0.0.1 로 TCP 를 강제한다: localhost 는 유닉스 소켓을 타는데,
+      #    정작 backend 는 TCP 로 붙으므로 소켓이 열린 것만으로는 준비됐다고 볼 수 없다.
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
       interval: 5s
       timeout: 5s
       retries: 10
+      # 초기화(첫 기동 시 데이터 디렉터리 생성)에 시간이 걸려도 실패로 세지 않는다.
+      start_period: 30s
 
   chromadb:
     image: chromadb/chroma:latest
@@ -31,13 +38,27 @@ services:
   backend:
     build:
       context: ./backend
+      args:
+        # 배포 커밋을 이미지에 박아 /actuator/info 로 확인할 수 있게 한다.
+        #   GIT_COMMIT=$(git rev-parse --short HEAD) \
+        #   GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) \
+        #   docker compose up -d --build
+        GIT_COMMIT: ${GIT_COMMIT:-unknown}
+        GIT_BRANCH: ${GIT_BRANCH:-unknown}
     container_name: sixpeng-backend
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      # 앞단 nginx 가 TLS 를 끊고 프록시하므로 8080 은 루프백에만 연다.
+      # 0.0.0.0 에 열면 http://<서버IP>:8080 으로 TLS 와 HSTS 를 우회할 수 있고,
+      # 그 경로에서는 Secure 쿠키가 실리지 않아 로그인도 이상하게 깨진다.
+      - "127.0.0.1:8080:8080"
     depends_on:
-      - mysql
-      - chromadb
+      mysql:
+        # 기동 순서만으로는 부족하다. MySQL 이 커넥션을 받기 전에 붙으면 부팅에 실패한다.
+        condition: service_healthy
+      chromadb:
+        # chromadb 는 healthcheck 가 없어 기동 여부만 본다.
+        condition: service_started
     env_file:
       - .env
 

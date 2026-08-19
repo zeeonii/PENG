@@ -44,9 +44,8 @@ management:
 
 info:
   deployment:
-    commit: ${RAILWAY_GIT_COMMIT_SHA:unknown}
-    branch: ${RAILWAY_GIT_BRANCH:unknown}
-    deploymentId: ${RAILWAY_DEPLOYMENT_ID:unknown}
+    commit: ${DEPLOY_COMMIT:unknown}
+    branch: ${DEPLOY_BRANCH:unknown}
 
 app:
   oauth2:

@@ -35,7 +35,8 @@ class ActuatorEndpointTest {
     void infoExposesDeploymentAndBuildInfo() throws Exception {
         mockMvc.perform(get("/actuator/info"))
                 .andExpect(status().isOk())
-                // Railway 환경변수 기반. 로컬/CI 에서는 unknown 이지만 키는 항상 존재해야 한다.
+                // 이미지 빌드 인자(DEPLOY_COMMIT/DEPLOY_BRANCH) 기반.
+                // 로컬/CI 에서는 unknown 이지만 키는 항상 존재해야 한다.
                 .andExpect(jsonPath("$.deployment.commit").exists())
                 .andExpect(jsonPath("$.deployment.branch").exists())
                 // build-info.properties 는 Gradle 의 bootBuildInfo 가 생성한다.
