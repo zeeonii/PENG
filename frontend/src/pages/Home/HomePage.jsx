@@ -40,8 +40,10 @@ export default function HomePage() {
         // 홈 화면엔 프로젝트 개념이 없어 첫 번째 프로젝트 기준으로 오늘의 브리핑을 보여줍니다.
         const firstProject = data[0];
         if (firstProject) {
-          const { data: briefingData } = await getTodayBriefing(firstProject.id).catch(() => ({ data: null }));
-          if (!ignore) setBriefing(briefingData);
+          // /briefings/today는 목록(ApiResponse<List<BriefingResponse>>)을 반환한다.
+          // 오늘자는 최대 1건이라 첫 번째 항목만 꺼내 쓴다.
+          const { data: briefingData } = await getTodayBriefing(firstProject.id).catch(() => ({ data: { data: [] } }));
+          if (!ignore) setBriefing(briefingData.data?.[0] ?? null);
         }
       })
       .catch(() => {

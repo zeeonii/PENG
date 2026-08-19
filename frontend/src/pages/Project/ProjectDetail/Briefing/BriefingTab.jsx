@@ -27,8 +27,10 @@ export default function BriefingTab({ projectId, onAskQuestion }) {
     let ignore = false;
 
     getTodayBriefing(projectId)
+      // /briefings/today는 목록(ApiResponse<List<BriefingResponse>>)을 반환한다.
+      // 오늘자는 최대 1건이라 첫 번째 항목만 꺼내 쓴다.
       .then(({ data }) => {
-        if (!ignore) setBriefing(data);
+        if (!ignore) setBriefing(data.data?.[0] ?? null);
       })
       .catch((err) => {
         if (!ignore) setError(err);
