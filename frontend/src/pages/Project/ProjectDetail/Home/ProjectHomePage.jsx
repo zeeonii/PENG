@@ -57,7 +57,7 @@ function ProjectOverview({ members, briefing, activities }) {
       <section className="lg:col-span-2">
         <h2 className="mb-3 text-base font-semibold text-primary">최근 활동</h2>
         {activities.length > 0 ? (
-          <ul className="overflow-hidden rounded-xl border border-border bg-white divide-y divide-border">
+          <ul className="max-h-80 divide-y divide-border overflow-y-auto rounded-xl border border-border bg-white">
             {activities.map((activity, index) => (
               <li key={index} className="px-5 py-4 text-sm text-primary">{activity.description}</li>
             ))}
