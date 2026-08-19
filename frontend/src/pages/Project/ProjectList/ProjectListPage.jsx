@@ -158,7 +158,7 @@ export default function ProjectListPage() {
                       <Badge variant={statusVariant[project.status]}>{project.status}</Badge>
                     )}
                   </div>
-                  <div className="flex -space-x-2">
+                  <div className="flex -space-x-1">
                     {project.members.slice(0, 3).map((member) => (
                       <span key={member.memberId} className="rounded-full bg-white ring-2 ring-white">
                         <Avatar name={memberDisplayName(member)} size="sm" />
@@ -180,7 +180,7 @@ export default function ProjectListPage() {
                 {project.description && (
                   <p className="mt-2 min-h-10 text-sm text-muted">{project.description}</p>
                 )}
-                <div className="mt-4 flex -space-x-2 border-t border-border pt-4">
+                <div className="mt-4 flex -space-x-1 border-t border-border pt-4">
                   {project.members.slice(0, 3).map((member) => (
                     <span key={member.memberId} className="rounded-full bg-white ring-2 ring-white">
                       <Avatar name={memberDisplayName(member)} size="sm" />

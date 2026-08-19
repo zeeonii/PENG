@@ -124,7 +124,7 @@ export default function HomePage() {
                 {project.status && (
                   <Badge variant={statusVariant[project.status]}>{project.status}</Badge>
                 )}
-                <span className="hidden -space-x-2 sm:flex">
+                <span className="hidden -space-x-1 sm:flex">
                   {project.members.slice(0, 3).map((member) => (
                     <span key={member.memberId} className="rounded-full bg-white ring-2 ring-white">
                       <Avatar name={memberDisplayName(member)} size="sm" />
