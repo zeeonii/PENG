@@ -91,14 +91,16 @@ export default function ProjectHomePage() {
     Promise.all([
       getProject(projectId),
       getProjectMembers(projectId),
-      getTodayBriefing(projectId).catch(() => ({ data: null })),
+      // /briefings/today는 목록(ApiResponse<List<BriefingResponse>>)을 반환한다.
+      // 오늘자는 최대 1건이라 첫 번째 항목만 꺼내 쓴다.
+      getTodayBriefing(projectId).then(({ data }) => data.data?.[0] ?? null).catch(() => null),
       getRecentActivities(projectId).catch(() => ({ data: [] })),
     ])
-      .then(([projectRes, membersRes, briefingRes, activitiesRes]) => {
+      .then(([projectRes, membersRes, briefing, activitiesRes]) => {
         if (ignore) return;
         setProject(projectRes.data);
         setMembers(membersRes.data);
-        setBriefing(briefingRes.data);
+        setBriefing(briefing);
         setActivities(activitiesRes.data);
       })
       .catch((err) => {
