@@ -73,6 +73,7 @@ class NotionOAuthClient {
                     .block();
 
             if (response == null || response.accessToken() == null) {
+                log.warn("Notion 토큰 교환 실패: 응답에 access_token 없음, response={}", response);
                 throw new BusinessException(ErrorCode.NOTION_AUTH_FAILED);
             }
             return response;
