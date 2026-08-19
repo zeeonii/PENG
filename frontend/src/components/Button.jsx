@@ -25,7 +25,7 @@ export default function Button({
     <button
       type={type}
       onClick={onClick}
-      className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${VARIANT_STYLES[variant]} ${className}`}
+      className={`shrink-0 whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-colors ${VARIANT_STYLES[variant]} ${className}`}
       {...props}
     >
       {children}
