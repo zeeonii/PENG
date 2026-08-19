@@ -126,7 +126,9 @@ export default function HomePage() {
                 )}
                 <span className="hidden -space-x-2 sm:flex">
                   {project.members.slice(0, 3).map((member) => (
-                    <Avatar key={member.memberId} name={memberDisplayName(member)} size="sm" />
+                    <span key={member.memberId} className="rounded-full bg-white ring-2 ring-white">
+                      <Avatar name={memberDisplayName(member)} size="sm" />
+                    </span>
                   ))}
                 </span>
               </Link>
