@@ -414,7 +414,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NotionAuthorizeResponse'
+                $ref: '#/components/schemas/AuthorizeUrlResponse'
 
   /integrations/notion/callback:
     get:
@@ -434,13 +434,16 @@ paths:
             type: string
       responses:
         '302':
-          description: 토큰 교환 및 연동 상태 저장 후 프론트엔드로 리다이렉트
+          description: 토큰 교환, 회의/문서 수집, 연동 상태 저장 후 프론트엔드로 리다이렉트
 
   /projects/{projectId}/integrations/google-meet:
     post:
       tags: [integrations]
-      summary: Google Meet 연동 시작
-      description: Meet 권한은 로그인 시 Google OAuth로 이미 동의받으므로, 별도 인가 없이 프로젝트의 연동 상태만 CONNECTED로 기록한다.
+      summary: Google Meet 연동 시작 (OAuth 인가 URL 발급)
+      description: |
+        로그인 스코프(profile/email)와 별개로 Meet 조회 권한(meetings.space.readonly,
+        drive.meet.readonly)을 incremental authorization으로 추가 요청한다.
+        프론트엔드는 응답의 authorizeUrl로 사용자를 리다이렉트시켜 동의를 받는다.
       parameters:
         - $ref: '#/components/parameters/ProjectId'
       responses:
@@ -449,7 +452,27 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/IntegrationStatus'
+                $ref: '#/components/schemas/AuthorizeUrlResponse'
+
+  /integrations/google-meet/callback:
+    get:
+      tags: [integrations]
+      summary: Google Meet OAuth 콜백 (Google이 리다이렉트로 호출, 프론트엔드가 직접 호출하지 않음)
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: true
+          description: 연동 시작 시 전달한 projectId
+          schema:
+            type: string
+      responses:
+        '302':
+          description: 토큰 교환, 최근 회의 녹취록 수집, 연동 상태 저장 후 프론트엔드로 리다이렉트
 
   /projects/{projectId}/integrations/status:
     get:
@@ -809,7 +832,7 @@ components:
           type: string
           format: date-time
 
-    NotionAuthorizeResponse:
+    AuthorizeUrlResponse:
       type: object
       properties:
         authorizeUrl:

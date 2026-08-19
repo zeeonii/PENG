@@ -1,3 +1,8 @@
+server:
+  # 운영과 같은 조건으로 돌리기 위해 여기에도 둔다. main 쪽 application.yml 은
+  # test 클래스패스의 이 파일에 통째로 가려지므로 자동으로 상속되지 않는다.
+  forward-headers-strategy: framework
+
 spring:
   application:
     name: sixpeng
@@ -20,14 +25,53 @@ spring:
               - profile
               - email
 
+# test 클래스패스의 application.yml 이 main 쪽을 통째로 가리므로 여기에도 같이 둔다.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+  info:
+    build:
+      enabled: true
+    java:
+      enabled: true
+    env:
+      enabled: true
+
+info:
+  deployment:
+    commit: ${RAILWAY_GIT_COMMIT_SHA:unknown}
+    branch: ${RAILWAY_GIT_BRANCH:unknown}
+    deploymentId: ${RAILWAY_DEPLOYMENT_ID:unknown}
+
 app:
   oauth2:
-    success-redirect-uri: http://localhost:5173/oauth/callback
+    success-redirect-uri: http://localhost:5173/auth/callback
     failure-redirect-uri: http://localhost:5173/login?error=oauth
   cors:
     allowed-origins: http://localhost:5173
+  frontend-url: http://localhost:5173
 
 openai:
   base-url: https://api.openai.com/v1
   api-key: test-key
   model: gpt-4o-mini
+
+notion:
+  client-id: test-client-id
+  client-secret: test-client-secret
+  redirect-uri: http://localhost:8080/integrations/notion/callback
+  authorize-uri: https://api.notion.com/v1/oauth/authorize
+  token-uri: https://api.notion.com/v1/oauth/token
+
+google-meet:
+  redirect-uri: http://localhost:8080/integrations/google-meet/callback
+  authorize-uri: https://accounts.google.com/o/oauth2/v2/auth
+  token-uri: https://oauth2.googleapis.com/token
+
+chroma:
+  base-url: http://localhost:8000

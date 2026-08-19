@@ -75,7 +75,7 @@ Table integration_status {
   project_id bigint [not null, ref: > project.id]
   type varchar [not null, note: 'NOTION 또는 GOOGLE_MEET']
   status varchar [not null, note: 'CONNECTED 또는 DISCONNECTED']
-  access_token varchar [note: 'OAuth access token (NOTION 전용, GOOGLE_MEET은 로그인 시 발급된 토큰 재사용)']
+  access_token varchar [note: 'OAuth access token. NOTION은 자체 앱, GOOGLE_MEET은 로그인과 같은 Google Client ID로 Meet/Drive 스코프만 incremental authorization으로 추가 발급받은 토큰']
   workspace_id varchar [note: 'Notion workspace id (NOTION 전용)']
   workspace_name varchar [note: 'Notion workspace 이름 (NOTION 전용)']
   last_synced_at timestamp

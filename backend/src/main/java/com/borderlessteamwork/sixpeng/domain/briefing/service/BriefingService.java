@@ -1,0 +1,45 @@
+package com.borderlessteamwork.sixpeng.domain.briefing.service;
+
+import com.borderlessteamwork.sixpeng.domain.briefing.dto.response.BriefingResponse;
+import com.borderlessteamwork.sixpeng.domain.briefing.entity.Briefing;
+import com.borderlessteamwork.sixpeng.domain.briefing.repository.BriefingRepository;
+import com.borderlessteamwork.sixpeng.domain.briefing.repository.BriefingSourceRepository;
+import com.borderlessteamwork.sixpeng.global.exception.BusinessException;
+import com.borderlessteamwork.sixpeng.global.exception.ErrorCode;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class BriefingService {
+
+    private final BriefingRepository briefingRepository;
+    private final BriefingSourceRepository briefingSourceRepository;
+    private final BriefingGenerationService briefingGenerationService;
+
+    @Transactional
+    public List<BriefingResponse> getTodayBriefings(Long projectId, Long memberId) {
+        briefingGenerationService.generateTodayBriefingIfNeeded(projectId, memberId);
+
+        LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
+
+        return briefingRepository.findByProjectIdAndMemberIdOrderByCreatedAtDesc(projectId, memberId)
+                .stream()
+                .filter(briefing -> !briefing.getCreatedAt().isBefore(startOfToday))
+                .map(briefing -> BriefingResponse.of(briefing, briefingSourceRepository.findByBriefingId(briefing.getId())))
+                .toList();
+    }
+
+    public BriefingResponse getBriefingDetail(Long briefingId) {
+        Briefing briefing = briefingRepository.findById(briefingId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.BRIEFING_NOT_FOUND));
+
+        return BriefingResponse.of(briefing, briefingSourceRepository.findByBriefingId(briefingId));
+    }
+}

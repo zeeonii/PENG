@@ -1,18 +1,16 @@
-/**
- * 디자인 미확정 상태의 임시 토큰입니다.
- * 디자인 확정 시 아래 색상 값만 교체하면 전체 컴포넌트에 자동 반영됩니다.
- */
 export default {
   content: ["./index.html", "./src/**/*.{js,jsx}"],
   theme: {
     extend: {
       colors: {
-        primary: "#111827",
-        secondary: "#F3F4F6",
-        border: "#E5E7EB",
-        success: "#16A34A",
-        active: "#2563EB",
-        danger: "#DC2626",
+        primary: "#1B2A4A",
+        "primary-dark": "#16233D",
+        secondary: "#F8F9FB",
+        border: "#E2E5EA",
+        accent: "#FFD97D",
+        success: "#4E9F66",
+        active: "#FF8C5A",
+        danger: "#D45B73",
         muted: "#6B7280",
       },
     },
