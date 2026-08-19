@@ -1,9 +1,6 @@
 /**
  * 설정 > 프로필 · 언어 설정
  *
- * Cultural Translation 표시 설정은 저장할 API가 명세에 없어 아직 로컬 상태로만
- * 동작합니다. (백엔드 확인 필요, 새로고침하면 초기화됩니다)
- *
  * 국가/시간대는 백엔드가 자유 텍스트로 저장합니다(예: "KR", "Asia/Seoul").
  * 와이어프레임의 한글 드롭다운과 형식이 달라 텍스트 입력으로 대체했습니다.
  */
@@ -14,7 +11,7 @@ import Button from "../../../components/Button.jsx";
 import Input from "../../../components/Input.jsx";
 import { updateMe } from "../../../api/member.js";
 import { useUser } from "../../../contexts/UserContext.jsx";
-import { LANGUAGE_OPTIONS, translationDisplay } from "../../../api/mock/settingsData.js";
+import { LANGUAGE_OPTIONS } from "../../../api/mock/settingsData.js";
 
 function Toggle({ checked, onChange, label }) {
   return (
@@ -42,9 +39,15 @@ function Toggle({ checked, onChange, label }) {
 
 export default function ProfilePage() {
   const { user, loading, refresh } = useUser();
-  const [form, setForm] = useState({ language: "KR", country: "", timezone: "", duty: "" });
+  const [form, setForm] = useState({
+    language: "KR",
+    country: "",
+    timezone: "",
+    duty: "",
+    showOriginalText: true,
+    showTranslatedText: true,
+  });
   const [loadedUser, setLoadedUser] = useState(null);
-  const [display, setDisplay] = useState(translationDisplay);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [saved, setSaved] = useState(false);
@@ -58,6 +61,8 @@ export default function ProfilePage() {
       country: user.country ?? "",
       timezone: user.timezone ?? "",
       duty: user.duty ?? "",
+      showOriginalText: user.showOriginalText ?? true,
+      showTranslatedText: user.showTranslatedText ?? true,
     });
   }
 
@@ -65,9 +70,9 @@ export default function ProfilePage() {
 
   // 원문과 번역문 중 최소 하나는 항상 표시되어야 합니다.
   const updateDisplay = (key, value) => {
-    const next = { ...display, [key]: value };
-    if (!next.showOriginal && !next.showTranslated) return;
-    setDisplay(next);
+    const next = { ...form, [key]: value };
+    if (!next.showOriginalText && !next.showTranslatedText) return;
+    setForm(next);
   };
 
   const handleSubmit = async (event) => {
@@ -156,19 +161,19 @@ export default function ProfilePage() {
           <div className="mt-4 space-y-3">
             <Toggle
               label="원문 표시"
-              checked={display.showOriginal}
-              onChange={(value) => updateDisplay("showOriginal", value)}
+              checked={form.showOriginalText}
+              onChange={(value) => updateDisplay("showOriginalText", value)}
             />
             <Toggle
               label="번역문 표시"
-              checked={display.showTranslated}
-              onChange={(value) => updateDisplay("showTranslated", value)}
+              checked={form.showTranslatedText}
+              onChange={(value) => updateDisplay("showTranslatedText", value)}
             />
           </div>
 
           <p className="mt-3 text-xs leading-5 text-muted">
             원문과 번역문 중 최소 하나는 항상 표시되어야 합니다. 둘 다 끄는 설정은
-            허용되지 않습니다. (이 설정은 아직 저장되지 않습니다)
+            허용되지 않습니다.
           </p>
         </section>
 
