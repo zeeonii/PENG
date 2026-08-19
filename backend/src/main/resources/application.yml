@@ -35,7 +35,9 @@ server:
       cookie:
         http-only: true
         # 프론트가 다른 사이트에 배포돼도 세션 쿠키가 실리도록 None 으로 둔다.
-        # None 은 Secure 를 요구하며, SameSite 방어가 사라지므로 CSRF 토큰이 반드시 켜져 있어야 한다.
+        # None 은 Secure 를 요구하며 SameSite 방어가 사라지는데, 프론트/백엔드가 서로 다른 도메인이라
+        # CSRF 토큰(double-submit-cookie)도 쓸 수 없다. 대신 CORS 허용 origin 을 명시적으로 제한해 방어한다
+        # (SecurityConfig.corsConfigurationSource 참고).
         same-site: none
         secure: true
 

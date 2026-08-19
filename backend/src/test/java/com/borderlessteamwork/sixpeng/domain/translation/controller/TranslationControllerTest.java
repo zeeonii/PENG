@@ -50,19 +50,14 @@ class TranslationControllerTest {
                 com.borderlessteamwork.sixpeng.domain.member.entity.Language.KR));
     }
 
-    /**
-     * /translation은 GET이 없어서 "미로그인" 단독 케이스를 분리해 검증할 수 없다
-     * (CSRF 필터가 인증 체크보다 먼저 동작해 토큰이 없으면 항상 403이 난다).
-     * 그래서 아래 CSRF 테스트가 "미로그인 POST 차단"까지 같이 검증한다.
-     */
     @Test
-    @DisplayName("CSRF 토큰이 없으면 로그인했어도(=미로그인 포함) 403이다")
-    void CSRF_토큰이_없으면_403을_반환한다() throws Exception {
-        mockMvc.perform(post("/translation").with(TestLogin.withoutCsrf(member))
+    @DisplayName("로그인하지 않으면 401이다")
+    void 로그인하지_않으면_401을_반환한다() throws Exception {
+        mockMvc.perform(post("/translation")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
                                 new TranslationRequestFixture("안녕", Language.KR, Language.EN))))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

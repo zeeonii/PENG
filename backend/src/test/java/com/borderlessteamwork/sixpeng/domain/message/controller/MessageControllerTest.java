@@ -98,17 +98,17 @@ class MessageControllerTest {
     }
 
     @Test
-    @DisplayName("CSRF 토큰이 없으면 로그인했어도 403이다")
-    void CSRF_토큰이_없으면_403을_반환한다() throws Exception {
+    @DisplayName("로그인하지 않으면 쪽지를 보낼 수 없다")
+    void 로그인하지_않으면_쪽지를_보낼_수_없다() throws Exception {
         MessageCreateRequest request = new MessageCreateRequest();
         request.setProjectId(1L);
         request.setReceiverId(20L);
         request.setOriginalText("hi");
 
-        mockMvc.perform(post("/messages").with(TestLogin.withoutCsrf(sender))
+        mockMvc.perform(post("/messages")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
