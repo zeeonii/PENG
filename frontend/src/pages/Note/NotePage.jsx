@@ -219,7 +219,7 @@ export default function NotePage() {
                             message.translatedText &&
                             message.translatedText !== message.originalText;
                           return (
-                            <div key={message.id} className={mine ? "ml-auto max-w-sm" : "max-w-sm"}>
+                            <div key={message.id} className={mine ? "ml-auto w-fit max-w-sm" : "w-fit max-w-sm"}>
                               <div className={`rounded-xl p-3 text-sm ${mine ? "rounded-tr-none bg-primary text-white" : "rounded-tl-none bg-white text-primary shadow-sm"}`}>
                                 {primaryText}
                               </div>
