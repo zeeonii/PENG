@@ -17,6 +17,7 @@ import {
   inviteProjectMember,
   removeProjectMember,
 } from "../../../../api/project.js";
+import { memberDisplayName } from "../../../../utils/member.js";
 
 export default function MembersTab({ projectId }) {
   const [members, setMembers] = useState([]);
@@ -130,9 +131,9 @@ export default function MembersTab({ projectId }) {
                 <tr key={member.memberId}>
                   <td className="px-4 py-3">
                     <span className="flex items-center gap-2 overflow-hidden">
-                      <Avatar name={member.name} size="sm" />
+                      <Avatar name={memberDisplayName(member)} size="sm" />
                       <strong className="truncate font-medium text-primary">
-                        {member.name}
+                        {memberDisplayName(member)}
                       </strong>
                     </span>
                   </td>
@@ -150,8 +151,8 @@ export default function MembersTab({ projectId }) {
                   <td className="px-4 py-3 text-right">
                     <button
                       type="button"
-                      onClick={() => handleRemove(member.memberId, member.name)}
-                      aria-label={`${member.name} 삭제`}
+                      onClick={() => handleRemove(member.memberId, memberDisplayName(member))}
+                      aria-label={`${memberDisplayName(member)} 삭제`}
                       className="text-muted hover:text-danger"
                     >
                       ✕

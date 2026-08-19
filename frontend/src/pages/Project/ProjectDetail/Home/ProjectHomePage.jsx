@@ -11,6 +11,7 @@ import MembersTab from "../Members/MembersTab.jsx";
 import IntegrationTab from "../Integration/IntegrationTab.jsx";
 import { getProject, getProjectMembers } from "../../../../api/project.js";
 import { getTodayBriefing } from "../../../../api/briefing.js";
+import { memberDisplayName } from "../../../../utils/member.js";
 
 // 명세에 status/description/기간 필드가 없어 안전하게 가드 처리했습니다.
 const statusVariant = { 진행중: "active", 검토중: "danger", 완료: "success" };
@@ -41,9 +42,9 @@ function ProjectOverview({ members, briefing }) {
         <div className="mt-4 space-y-3">
           {members.map((member) => (
             <div key={member.memberId} className="flex items-center gap-2">
-              <Avatar name={member.name} size="sm" />
+              <Avatar name={memberDisplayName(member)} size="sm" />
               <div>
-                <p className="text-sm font-medium text-primary">{member.name}</p>
+                <p className="text-sm font-medium text-primary">{memberDisplayName(member)}</p>
                 <p className="text-xs text-muted">{member.role ?? "프로젝트 팀원"}</p>
               </div>
             </div>
