@@ -14,4 +14,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
             Long projectId, DocumentSourceType sourceType, String sourceId);
 
     List<Document> findByProjectIdAndCollectedAtAfterOrderByCollectedAtAsc(Long projectId, LocalDateTime after);
+
+    /** 프로젝트 홈의 "최근 활동" 피드용. */
+    List<Document> findTop10ByProjectIdOrderByCollectedAtDesc(Long projectId);
 }
