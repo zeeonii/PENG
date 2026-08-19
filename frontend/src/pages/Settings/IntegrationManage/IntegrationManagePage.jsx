@@ -1,8 +1,6 @@
 /**
  * 설정 > 연동 관리
  *
- * 디자인 확정 시 교체 필요: 서비스 아이콘은 회색 사각형 플레이스홀더입니다.
- *
  * ⚠️ 이 화면의 라우트(/settings)에는 프로젝트 정보가 없는데, 연동 상태·시작 API는
  * 프로젝트 단위입니다. 임시로 내가 참여한 첫 번째 프로젝트를 기준으로 표시합니다.
  * 근본적으로는 라우트를 /projects/:projectId/settings 형태로 바꾸거나,
@@ -12,11 +10,14 @@
 import { useEffect, useState } from "react";
 import SettingsLayout from "../SettingsLayout.jsx";
 import Badge from "../../../components/Badge.jsx";
+import GoogleMeetIcon from "../../../components/icons/GoogleMeetIcon.jsx";
+import NotionIcon from "../../../components/icons/NotionIcon.jsx";
 import { getProjects } from "../../../api/project.js";
 import { getIntegrationStatus } from "../../../api/integration.js";
 
 const ALL_INTEGRATION_TYPES = ["GOOGLE_MEET", "NOTION"];
 const integrationLabel = { NOTION: "Notion", GOOGLE_MEET: "Google Meet" };
+const integrationIcon = { NOTION: NotionIcon, GOOGLE_MEET: GoogleMeetIcon };
 const statusLabel = { CONNECTED: "정상", DISCONNECTED: "연결 끊김" };
 const statusVariant = { CONNECTED: "success", DISCONNECTED: "danger" };
 
@@ -84,30 +85,32 @@ export default function IntegrationManagePage() {
 
       {!loading && projectId && (
         <div className="mt-6 space-y-4">
-          {integrations.map((integration) => (
-            <section
-              key={integration.type}
-              className="rounded-xl border border-border bg-white p-5"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <span className="flex items-center gap-3">
-                  {/* 디자인 확정 시 서비스 아이콘으로 교체 */}
-                  <span className="h-9 w-9 shrink-0 rounded bg-secondary" />
-                  <strong className="block font-bold text-primary">
-                    {integrationLabel[integration.type]}
-                  </strong>
-                </span>
+          {integrations.map((integration) => {
+            const Icon = integrationIcon[integration.type];
+            return (
+              <section
+                key={integration.type}
+                className="rounded-xl border border-border bg-white p-5"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <span className="flex items-center gap-3">
+                    <Icon className="h-9 w-9 shrink-0" />
+                    <strong className="block font-bold text-primary">
+                      {integrationLabel[integration.type]}
+                    </strong>
+                  </span>
 
-                <Badge variant={statusVariant[integration.status]}>
-                  {statusLabel[integration.status]}
-                </Badge>
-              </div>
+                  <Badge variant={statusVariant[integration.status]}>
+                    {statusLabel[integration.status]}
+                  </Badge>
+                </div>
 
-              <p className="mt-4 text-xs text-muted">
-                마지막 동기화: {formatDateTime(integration.lastSyncedAt)}
-              </p>
-            </section>
-          ))}
+                <p className="mt-4 text-xs text-muted">
+                  마지막 동기화: {formatDateTime(integration.lastSyncedAt)}
+                </p>
+              </section>
+            );
+          })}
           {integrations.length === 0 && (
             <p className="text-sm text-muted">연동된 서비스가 없어요.</p>
           )}
