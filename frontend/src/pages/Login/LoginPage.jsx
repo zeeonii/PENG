@@ -7,7 +7,7 @@ export default function LoginPage() {
   return (
     <main className="grid min-h-screen bg-secondary lg:grid-cols-2">
       <section className="relative hidden overflow-hidden bg-primary-dark p-16 text-accent lg:flex lg:flex-col">
-        <span className="text-2xl font-bold">MORROW.</span>
+        <span className="text-2xl font-bold">MORROW<span className="text-active">.</span></span>
         <div className="my-auto">
           <p className="text-xs font-semibold tracking-[.2em] text-accent/80">A DAY WITH MORROW</p>
           <h1 className="mt-4 text-5xl font-bold leading-tight text-white">
@@ -21,7 +21,7 @@ export default function LoginPage() {
 
       <section className="flex items-center justify-center bg-white p-6">
         <div className="w-full max-w-sm text-center">
-          <div className="mb-8 text-2xl font-bold text-primary lg:hidden">MORROW.</div>
+          <div className="mb-8 text-2xl font-bold text-primary lg:hidden">MORROW<span className="text-active">.</span></div>
           <p className="text-xs font-semibold tracking-[.15em] text-primary">WELCOME TO MORROW</p>
           <h2 className="mt-3 text-3xl font-bold text-active">다시 만나 반가워요</h2>
           <p className="mt-3 text-sm leading-6 text-muted">Google 계정으로 로그인하고<br />프로젝트의 오늘을 확인하세요.</p>
