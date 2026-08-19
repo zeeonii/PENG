@@ -7,6 +7,13 @@ import { getProjects, getProjectMembers } from "../../api/project.js";
 import { getMessages, sendMessage, markMessageAsRead } from "../../api/message.js";
 import { memberDisplayName } from "../../utils/member.js";
 
+// 쪽지 화면에서는 AI 팀원을 "나의 워크스페이스"로 표시합니다.
+// (쪽지는 사람 간 메시지라 AI 팀원이 자동 답장을 하지 않으므로, 자기 자신에게
+// 메모를 남기는 개인 워크스페이스 용도로 안내합니다.)
+const contactLabel = (person) => (person?.isAiTeammate ? "나의 워크스페이스" : memberDisplayName(person));
+const contactLabelWithHonorific = (person) =>
+  person?.isAiTeammate ? contactLabel(person) : `${contactLabel(person)}님`;
+
 export default function NotePage() {
   const { user } = useUser();
 
@@ -173,9 +180,9 @@ export default function NotePage() {
                         activeId === contact.memberId ? "bg-secondary" : "hover:bg-secondary"
                       }`}
                     >
-                      <Avatar name={memberDisplayName(contact)} />
+                      <Avatar name={contactLabel(contact)} />
                       <span>
-                        <strong className="block text-sm text-primary">{memberDisplayName(contact)}</strong>
+                        <strong className="block text-sm text-primary">{contactLabel(contact)}</strong>
                         {contact.role && <small className="text-xs text-muted">{contact.role}</small>}
                       </span>
                     </button>
@@ -190,12 +197,12 @@ export default function NotePage() {
                 {active ? (
                   <>
                     <header className="flex items-center gap-3 border-b border-border p-5">
-                      <Avatar name={memberDisplayName(active)} />
-                      <span><strong className="block text-sm text-primary">{memberDisplayName(active)}</strong></span>
+                      <Avatar name={contactLabel(active)} />
+                      <span><strong className="block text-sm text-primary">{contactLabel(active)}</strong></span>
                     </header>
                     <div className="flex-1 space-y-4 bg-secondary/50 p-5">
                       {conversation.length === 0 ? (
-                        <p className="pt-16 text-center text-sm text-muted">{memberDisplayName(active)}님에게 첫 메시지를 보내보세요.</p>
+                        <p className="pt-16 text-center text-sm text-muted">{contactLabelWithHonorific(active)}에게 첫 메시지를 보내보세요.</p>
                       ) : (
                         conversation.map((message) => {
                           const mine = message.senderId === user.id;
@@ -224,7 +231,7 @@ export default function NotePage() {
                             send();
                           }
                         }}
-                        placeholder={`${memberDisplayName(active)}님에게 메시지 보내기`}
+                        placeholder={`${contactLabelWithHonorific(active)}에게 메시지 보내기`}
                         disabled={sending}
                         className="h-20 w-full resize-none rounded-md border border-border p-3 text-sm outline-none focus:ring-2 focus:ring-active/40"
                       />
