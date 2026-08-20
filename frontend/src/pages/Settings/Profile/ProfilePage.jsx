@@ -41,8 +41,8 @@ export default function ProfilePage() {
   const { user, loading, refresh } = useUser();
   const [form, setForm] = useState({
     language: "KR",
-    country: "",
-    timezone: "",
+    country: "KR",
+    timezone: "Asia/Seoul",
     duty: "",
     showOriginalText: true,
     showTranslatedText: true,
@@ -58,8 +58,8 @@ export default function ProfilePage() {
     setLoadedUser(user);
     setForm({
       language: user.language ?? "KR",
-      country: user.country ?? "",
-      timezone: user.timezone ?? "",
+      country: user.country ?? "KR",
+      timezone: user.timezone ?? "Asia/Seoul",
       duty: user.duty ?? "",
       showOriginalText: user.showOriginalText ?? true,
       showTranslatedText: user.showTranslatedText ?? true,
