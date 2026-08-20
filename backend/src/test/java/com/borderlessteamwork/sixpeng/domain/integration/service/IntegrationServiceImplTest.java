@@ -310,7 +310,8 @@ class IntegrationServiceImplTest {
         when(googleMeetContentClient.fetchRecentConferenceRecords("meet-token"))
                 .thenReturn(List.of(new GoogleConferenceRecord("conferenceRecords/abc", "2026-08-11T09:00:00Z")));
         when(googleMeetContentClient.fetchTranscriptContent("meet-token", "conferenceRecords/abc"))
-                .thenReturn("A: 안녕하세요\nB: 네 안녕하세요\n");
+                .thenReturn(new GoogleMeetTranscript(
+                        "A: 안녕하세요\nB: 네 안녕하세요\n", "https://docs.google.com/document/d/doc-1/edit"));
         when(documentRepository.findByProjectIdAndSourceTypeAndSourceId(
                 PROJECT_ID, DocumentSourceType.GOOGLE_MEET, "conferenceRecords/abc"))
                 .thenReturn(Optional.empty());
@@ -323,6 +324,8 @@ class IntegrationServiceImplTest {
         Document saved = captor.getValue();
         assertThat(saved.getContent()).isEqualTo("A: 안녕하세요\nB: 네 안녕하세요\n");
         assertThat(saved.getSourceType()).isEqualTo(DocumentSourceType.GOOGLE_MEET);
+        // QnA/브리핑 소스 카드에서 원본으로 이동할 수 있어야 하므로 URL이 함께 저장돼야 한다.
+        assertThat(saved.getSourceUrl()).isEqualTo("https://docs.google.com/document/d/doc-1/edit");
     }
 
     @Test
@@ -337,7 +340,7 @@ class IntegrationServiceImplTest {
         when(googleMeetContentClient.fetchRecentConferenceRecords("meet-token"))
                 .thenReturn(List.of(new GoogleConferenceRecord("conferenceRecords/abc", "2026-08-11T09:00:00Z")));
         when(googleMeetContentClient.fetchTranscriptContent("meet-token", "conferenceRecords/abc"))
-                .thenReturn("");
+                .thenReturn(GoogleMeetTranscript.empty());
 
         integrationService.handleGoogleMeetCallback("code123", "p1", MEMBER_ID);
 

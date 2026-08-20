@@ -47,29 +47,35 @@ class GoogleMeetContentClient {
      * 해당 회의 기록의 첫 번째 녹취록 본문을 발화자: 내용 형태로 이어붙인다. 녹취록이 없으면 빈 문자열.
      * entries API는 구조화된 발화 기록이 있을 때만 채워지고, 실제로는 Google Docs 파일로만
      * export된 경우(docsDestination)가 있어 그 경우 Docs API로 본문을 대신 읽어온다.
+     *
+     * <p>docsDestination이 있으면 그 Docs 문서 링크를 sourceUrl로 함께 돌려준다(QnA/브리핑
+     * 소스 카드에서 원본으로 이동하는 데 쓰인다). entries만으로 본문을 채운 경우에도 같은
+     * transcript에 Docs export가 병행돼 있을 수 있어 docId 유무만으로 판단한다.
      */
-    String fetchTranscriptContent(String accessToken, String conferenceRecordName) {
+    GoogleMeetTranscript fetchTranscriptContent(String accessToken, String conferenceRecordName) {
         JsonNode transcriptsResponse = get(accessToken, "/" + conferenceRecordName + "/transcripts");
         JsonNode transcripts = transcriptsResponse.path("transcripts");
         if (!transcripts.isArray() || transcripts.isEmpty()) {
-            return "";
+            return GoogleMeetTranscript.empty();
         }
         JsonNode transcript = transcripts.get(0);
         String transcriptName = transcript.path("name").asString("");
         if (transcriptName.isEmpty()) {
-            return "";
-        }
-
-        String entriesContent = fetchEntriesContent(accessToken, transcriptName);
-        if (!entriesContent.isBlank()) {
-            return entriesContent;
+            return GoogleMeetTranscript.empty();
         }
 
         String docId = transcript.path("docsDestination").path("document").asString("");
-        if (docId.isEmpty()) {
-            return "";
+        String sourceUrl = docId.isEmpty() ? null : "https://docs.google.com/document/d/" + docId + "/edit";
+
+        String entriesContent = fetchEntriesContent(accessToken, transcriptName);
+        if (!entriesContent.isBlank()) {
+            return new GoogleMeetTranscript(entriesContent, sourceUrl);
         }
-        return googleDocsClient.fetchPlainText(accessToken, docId);
+
+        if (docId.isEmpty()) {
+            return GoogleMeetTranscript.empty();
+        }
+        return new GoogleMeetTranscript(googleDocsClient.fetchPlainText(accessToken, docId), sourceUrl);
     }
 
     private String fetchEntriesContent(String accessToken, String transcriptName) {
