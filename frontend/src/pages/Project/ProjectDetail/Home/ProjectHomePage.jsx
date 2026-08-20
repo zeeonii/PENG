@@ -13,9 +13,10 @@ import { getProject, getProjectMembers } from "../../../../api/project.js";
 import { getTodayBriefing } from "../../../../api/briefing.js";
 import { getRecentActivities } from "../../../../api/activity.js";
 import { memberDisplayName } from "../../../../utils/member.js";
+import { projectStatusLabel } from "../../../../utils/project.js";
 
-// 명세에 status/description/기간 필드가 없어 안전하게 가드 처리했습니다.
-const statusVariant = { 진행중: "active", 검토중: "danger", 완료: "success" };
+// 명세에 description/기간 필드가 없어 안전하게 가드 처리했습니다.
+const statusVariant = { 진행중: "active", 진행전: "default", 완료: "success" };
 
 function ProjectOverview({ members, briefing, activities }) {
   return (
@@ -139,7 +140,9 @@ export default function ProjectHomePage() {
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-bold text-primary">{project.name}</h1>
             {project.status && (
-              <Badge variant={statusVariant[project.status]}>{project.status}</Badge>
+              <Badge variant={statusVariant[projectStatusLabel(project.status)]}>
+                {projectStatusLabel(project.status)}
+              </Badge>
             )}
             <Link to={`/projects/${project.id}/edit`}>
               <Button variant="secondary" className="px-3 py-1.5 text-xs">
