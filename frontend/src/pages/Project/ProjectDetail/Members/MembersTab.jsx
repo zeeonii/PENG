@@ -26,6 +26,7 @@ export default function MembersTab({ projectId }) {
 
   const [inviting, setInviting] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("");
   const [inviteError, setInviteError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -65,10 +66,11 @@ export default function MembersTab({ projectId }) {
     setSubmitting(true);
     setInviteError(null);
     try {
-      await inviteProjectMember(projectId, { email });
+      await inviteProjectMember(projectId, { email, role: inviteRole.trim() || undefined });
       const { data } = await getProjectMembers(projectId);
       setMembers(data);
       setInviteEmail("");
+      setInviteRole("");
       setInviting(false);
     } catch {
       setInviteError("초대에 실패했어요. 이미 가입한 이메일인지 확인해주세요.");
@@ -97,6 +99,12 @@ export default function MembersTab({ projectId }) {
             onChange={(event) => setInviteEmail(event.target.value)}
             required
           />
+          <Input
+            placeholder="역할 (선택, 예: PM)"
+            value={inviteRole}
+            onChange={(event) => setInviteRole(event.target.value)}
+            className="w-40"
+          />
           <Button type="submit" disabled={submitting}>
             {submitting ? "초대 중..." : "초대"}
           </Button>
@@ -120,9 +128,9 @@ export default function MembersTab({ projectId }) {
             <thead className="border-b border-border text-xs text-muted">
               <tr>
                 <th className="px-4 py-3 font-medium">이름</th>
+                <th className="px-4 py-3 font-medium">역할</th>
                 <th className="px-4 py-3 font-medium">담당 업무</th>
                 <th className="px-4 py-3 font-medium">국가 · 시간대</th>
-                <th className="px-4 py-3 font-medium">역할</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -140,6 +148,8 @@ export default function MembersTab({ projectId }) {
                   <td className="truncate px-4 py-3 text-muted">
                     {member.role ?? "-"}
                   </td>
+                  {/* ProjectMemberResponse에 duty 필드가 아직 없어 표시 불가. 백엔드 추가 필요. */}
+                  <td className="truncate px-4 py-3 text-muted">-</td>
                   <td className="truncate px-4 py-3 text-muted">
                     {member.country
                       ? member.timezone
@@ -147,7 +157,6 @@ export default function MembersTab({ projectId }) {
                         : member.country
                       : "-"}
                   </td>
-                  <td className="px-4 py-3 text-muted">-</td>
                   <td className="px-4 py-3 text-right">
                     <button
                       type="button"
