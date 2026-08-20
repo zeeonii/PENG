@@ -1,7 +1,6 @@
 package com.borderlessteamwork.sixpeng.global.config;
 
 import com.borderlessteamwork.sixpeng.global.exception.ErrorCode;
-import com.borderlessteamwork.sixpeng.global.security.CsrfCookieFilter;
 import com.borderlessteamwork.sixpeng.global.security.CustomOAuth2UserService;
 import com.borderlessteamwork.sixpeng.global.security.ErrorResponseWriter;
 import lombok.RequiredArgsConstructor;
@@ -15,9 +14,6 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
-import org.springframework.security.web.csrf.CsrfFilter;
-import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -45,11 +41,11 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                // 세션 쿠키가 SameSite=None 이라 SameSite 방어가 없다. CSRF 토큰이 유일한 방어선이다.
-                .csrf(csrf -> csrf
-                        .csrfTokenRepository(csrfTokenRepository())
-                        .csrfTokenRequestHandler(csrfTokenRequestHandler()))
-                .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
+                // 프론트/백엔드가 서로 다른 도메인이라 프론트 JS 가 XSRF-TOKEN 쿠키를 읽을 수 없어
+                // double-submit-cookie 방식의 CSRF 토큰 검증이 원천적으로 불가능하다.
+                // 대신 CORS 허용 origin 을 명시적 목록으로 제한하고(와일드카드 아님), 상태를 바꾸는
+                // 요청은 모두 JSON 본문을 요구해(단순 요청이 아니라 preflight 대상) 이를 방어선으로 삼는다.
+                .csrf(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
@@ -78,23 +74,6 @@ public class SecurityConfig {
                                 errorResponseWriter.write(response, ErrorCode.ACCESS_DENIED)));
 
         return http.build();
-    }
-
-    /**
-     * SPA 가 읽어야 하므로 HttpOnly 를 끄고, 세션 쿠키와 같은 SameSite=None; Secure 로 맞춘다.
-     * 프론트는 XSRF-TOKEN 쿠키 값을 X-XSRF-TOKEN 헤더로 되돌려 보내야 한다.
-     */
-    private CookieCsrfTokenRepository csrfTokenRepository() {
-        CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
-        repository.setCookieCustomizer(cookie -> cookie.sameSite("None").secure(true));
-        return repository;
-    }
-
-    private CsrfTokenRequestAttributeHandler csrfTokenRequestHandler() {
-        CsrfTokenRequestAttributeHandler handler = new CsrfTokenRequestAttributeHandler();
-        // null 로 두면 토큰을 지연 로딩하지 않아 BREACH 대응 인코딩 없이 원문 토큰을 그대로 비교한다(SPA 권장 설정).
-        handler.setCsrfRequestAttributeName(null);
-        return handler;
     }
 
     private SimpleUrlAuthenticationSuccessHandler oauth2SuccessHandler() {

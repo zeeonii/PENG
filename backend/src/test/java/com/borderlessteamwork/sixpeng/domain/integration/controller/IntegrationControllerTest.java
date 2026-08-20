@@ -68,10 +68,10 @@ class IntegrationControllerTest {
     }
 
     @Test
-    @DisplayName("CSRF 토큰이 없으면 로그인했어도 403이다")
-    void CSRF_토큰이_없으면_403을_반환한다() throws Exception {
-        mockMvc.perform(post("/projects/{projectId}/integrations/notion", 1L).with(TestLogin.withoutCsrf(member)))
-                .andExpect(status().isForbidden());
+    @DisplayName("로그인하지 않으면 Notion 연동을 시작할 수 없다")
+    void 로그인하지_않으면_Notion_연동을_시작할_수_없다() throws Exception {
+        mockMvc.perform(post("/projects/{projectId}/integrations/notion", 1L))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

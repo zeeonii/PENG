@@ -99,14 +99,14 @@ class ProjectControllerTest {
     }
 
     @Test
-    @DisplayName("CSRF 토큰이 없으면 로그인했어도 403 이다")
-    void createProjectRequiresCsrfToken() throws Exception {
-        mockMvc.perform(post("/projects").with(TestLogin.withoutCsrf(owner))
+    @DisplayName("로그인하지 않으면 프로젝트를 만들 수 없다")
+    void createProjectRequiresLogin() throws Exception {
+        mockMvc.perform(post("/projects")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"name": "sixpeng"}
                                 """))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
