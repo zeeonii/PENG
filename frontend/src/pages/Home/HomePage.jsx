@@ -71,13 +71,13 @@ export default function HomePage() {
           <h1 className="mt-2 text-3xl font-bold text-primary">
             좋은 아침이에요{user ? `, ${user.name}님` : ""}
           </h1>
-          <p className="mt-2 text-sm text-muted">밤사이 팀의 변화를 MORROW가 정리했어요.</p>
+          <p className="mt-2 text-sm text-muted">밤사이 팀의 변화를 REMI가 정리했어요.</p>
         </header>
 
         <section className="rounded-2xl bg-primary p-6 text-white shadow-lg">
           <div className="flex flex-col justify-between gap-6 md:flex-row">
             <div className="min-w-0">
-              <p className="text-xs font-semibold tracking-wider text-accent">TODAY&apos;S MORROW BRIEFING</p>
+              <p className="text-xs font-semibold tracking-wider text-accent">TODAY&apos;S REMI 브리핑</p>
               <h2 className="mt-3 text-base font-medium leading-relaxed text-white/90">
                 {!briefingLoading && updatedProjects.length > 0 ? (
                   <>

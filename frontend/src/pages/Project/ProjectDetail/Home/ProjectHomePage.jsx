@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import MainLayout from "../../../../layouts/MainLayout.jsx";
 import Avatar from "../../../../components/Avatar.jsx";
-import Button from "../../../../components/Button.jsx";
 import Tab from "../../../../components/Tab.jsx";
 import BriefingTab from "../Briefing/BriefingTab.jsx";
 import QnATab from "../QnA/QnATab.jsx";
@@ -173,11 +172,6 @@ export default function ProjectHomePage() {
                 ))}
               </select>
             )}
-            <Link to={`/projects/${project.id}/edit`}>
-              <Button variant="secondary" className="px-3 py-1.5 text-xs">
-                팀원 · 연동 관리
-              </Button>
-            </Link>
           </div>
           {project.description && (
             <p className="mt-3 text-sm text-muted">{project.description}</p>
