@@ -17,4 +17,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 
     /** 프로젝트 홈의 "최근 활동" 피드용. */
     List<Document> findTop10ByProjectIdOrderByCollectedAtDesc(Long projectId);
+
+    /** 프로젝트 삭제 시 문서 행을 정리하는 용도. */
+    void deleteByProjectId(Long projectId);
 }

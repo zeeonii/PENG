@@ -58,4 +58,8 @@ public class ProjectMember {
     public static ProjectMember of(Project project, Member member, String role) {
         return new ProjectMember(project, member, role);
     }
+
+    public void updateRole(String role) {
+        this.role = role;
+    }
 }

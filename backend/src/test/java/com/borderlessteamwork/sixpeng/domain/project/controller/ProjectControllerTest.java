@@ -430,4 +430,222 @@ class ProjectControllerTest {
                                 """))
                 .andExpect(status().isUnauthorized());
     }
+
+    @Test
+    @DisplayName("이름을 변경하면 200이고 바뀐 값이 내려온다")
+    void updateName() throws Exception {
+        Project project = createProject("old-name", owner);
+
+        mockMvc.perform(patch("/projects/{id}/name", project.getId()).with(TestLogin.as(owner))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "new-name"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(project.getId()))
+                .andExpect(jsonPath("$.name").value("new-name"));
+
+        assertThat(projectRepository.findById(project.getId()).orElseThrow().getName()).isEqualTo("new-name");
+    }
+
+    @Test
+    @DisplayName("생성자가 아닌 참여자도 이름을 바꿀 수 있다")
+    void participantCanUpdateName() throws Exception {
+        Project project = createProject("old-name", owner);
+        projectMemberRepository.save(ProjectMember.of(project, teammate, "Backend"));
+
+        mockMvc.perform(patch("/projects/{id}/name", project.getId()).with(TestLogin.as(teammate))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "new-name"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("new-name"));
+    }
+
+    @Test
+    @DisplayName("참여자가 아니면 이름을 바꿀 수 없다")
+    void outsiderCannotUpdateName() throws Exception {
+        Project project = createProject("old-name", owner);
+
+        mockMvc.perform(patch("/projects/{id}/name", project.getId()).with(TestLogin.as(outsider))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "new-name"}
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("P002"));
+    }
+
+    @Test
+    @DisplayName("이름이 비어 있으면 400이다")
+    void updateNameRejectsBlank() throws Exception {
+        Project project = createProject("old-name", owner);
+
+        mockMvc.perform(patch("/projects/{id}/name", project.getId()).with(TestLogin.as(owner))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "  "}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("C001"));
+    }
+
+    @Test
+    @DisplayName("로그인하지 않으면 이름을 변경할 수 없다")
+    void updateNameRequiresLogin() throws Exception {
+        Project project = createProject("old-name", owner);
+
+        mockMvc.perform(patch("/projects/{id}/name", project.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "new-name"}
+                                """))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("생성자가 프로젝트를 삭제하면 204이고 목록에서 사라진다")
+    void deleteProject() throws Exception {
+        Project project = createProject("mine", owner);
+
+        mockMvc.perform(delete("/projects/{id}", project.getId()).with(TestLogin.as(owner)))
+                .andExpect(status().isNoContent());
+
+        assertThat(projectRepository.findById(project.getId())).isEmpty();
+        assertThat(projectMemberRepository.existsByProjectIdAndMemberId(project.getId(), owner.getId())).isFalse();
+    }
+
+    @Test
+    @DisplayName("생성자가 아니면 프로젝트를 삭제할 수 없다")
+    void nonOwnerCannotDeleteProject() throws Exception {
+        Project project = createProject("mine", owner);
+        projectMemberRepository.save(ProjectMember.of(project, teammate, "Backend"));
+
+        mockMvc.perform(delete("/projects/{id}", project.getId()).with(TestLogin.as(teammate)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("P007"));
+
+        assertThat(projectRepository.findById(project.getId())).isPresent();
+    }
+
+    @Test
+    @DisplayName("참여자가 아니면 프로젝트를 삭제할 수 없다")
+    void outsiderCannotDeleteProject() throws Exception {
+        Project project = createProject("mine", owner);
+
+        mockMvc.perform(delete("/projects/{id}", project.getId()).with(TestLogin.as(outsider)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("P007"));
+    }
+
+    @Test
+    @DisplayName("없는 프로젝트를 삭제하면 404다")
+    void deleteProjectNotFound() throws Exception {
+        mockMvc.perform(delete("/projects/{id}", 9_999_999L).with(TestLogin.as(owner)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("P001"));
+    }
+
+    @Test
+    @DisplayName("로그인하지 않으면 프로젝트를 삭제할 수 없다")
+    void deleteProjectRequiresLogin() throws Exception {
+        Project project = createProject("mine", owner);
+
+        mockMvc.perform(delete("/projects/{id}", project.getId()))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("팀원 역할을 변경하면 200이고 바뀐 값이 내려온다")
+    void updateMemberRole() throws Exception {
+        Project project = createProject("mine", owner);
+        projectMemberRepository.save(ProjectMember.of(project, teammate, "Backend"));
+
+        mockMvc.perform(patch("/projects/{id}/members/{memberId}/role", project.getId(), teammate.getId())
+                        .with(TestLogin.as(owner))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"role": "Frontend"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.memberId").value(teammate.getId()))
+                .andExpect(jsonPath("$.role").value("Frontend"));
+    }
+
+    @Test
+    @DisplayName("참여자가 아니면 팀원 역할을 바꿀 수 없다")
+    void outsiderCannotUpdateMemberRole() throws Exception {
+        Project project = createProject("mine", owner);
+        projectMemberRepository.save(ProjectMember.of(project, teammate, "Backend"));
+
+        mockMvc.perform(patch("/projects/{id}/members/{memberId}/role", project.getId(), teammate.getId())
+                        .with(TestLogin.as(outsider))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"role": "Frontend"}
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("P002"));
+    }
+
+    @Test
+    @DisplayName("AI 팀원의 역할은 바꿀 수 없다")
+    void cannotUpdateAiTeammateRole() throws Exception {
+        Project project = createProject("mine", owner);
+
+        mockMvc.perform(patch("/projects/{id}/members/{memberId}/role", project.getId(), aiTeammate.getId())
+                        .with(TestLogin.as(owner))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"role": "Frontend"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("P008"));
+    }
+
+    @Test
+    @DisplayName("없는 팀원의 역할을 바꾸면 404다")
+    void updateMemberRoleNotFound() throws Exception {
+        Project project = createProject("mine", owner);
+
+        mockMvc.perform(patch("/projects/{id}/members/{memberId}/role", project.getId(), teammate.getId())
+                        .with(TestLogin.as(owner))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"role": "Frontend"}
+                                """))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("P003"));
+    }
+
+    @Test
+    @DisplayName("역할이 비어 있으면 400이다")
+    void updateMemberRoleRejectsBlank() throws Exception {
+        Project project = createProject("mine", owner);
+        projectMemberRepository.save(ProjectMember.of(project, teammate, "Backend"));
+
+        mockMvc.perform(patch("/projects/{id}/members/{memberId}/role", project.getId(), teammate.getId())
+                        .with(TestLogin.as(owner))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"role": "  "}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("C001"));
+    }
+
+    @Test
+    @DisplayName("로그인하지 않으면 팀원 역할을 바꿀 수 없다")
+    void updateMemberRoleRequiresLogin() throws Exception {
+        Project project = createProject("mine", owner);
+        projectMemberRepository.save(ProjectMember.of(project, teammate, "Backend"));
+
+        mockMvc.perform(patch("/projects/{id}/members/{memberId}/role", project.getId(), teammate.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"role": "Frontend"}
+                                """))
+                .andExpect(status().isUnauthorized());
+    }
 }

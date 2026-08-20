@@ -19,6 +19,8 @@ public enum ErrorCode {
     PROJECT_MEMBER_ALREADY_EXISTS(HttpStatus.CONFLICT, "P004", "Already a member of the project"),
     PROJECT_OWNER_CANNOT_BE_REMOVED(HttpStatus.BAD_REQUEST, "P005", "Project owner cannot be removed"),
     PROJECT_AI_TEAMMATE_CANNOT_BE_REMOVED(HttpStatus.BAD_REQUEST, "P006", "AI teammate cannot be removed"),
+    PROJECT_DELETE_FORBIDDEN(HttpStatus.FORBIDDEN, "P007", "Only the project owner can delete the project"),
+    PROJECT_AI_TEAMMATE_ROLE_CANNOT_BE_CHANGED(HttpStatus.BAD_REQUEST, "P008", "AI teammate's role cannot be changed"),
     TRANSLATION_FAILED(HttpStatus.BAD_GATEWAY, "T001", "Translation API call failed"),
     NOTION_AUTH_FAILED(HttpStatus.BAD_GATEWAY, "I001", "Notion OAuth authorization failed"),
     INVALID_OAUTH_STATE(HttpStatus.BAD_REQUEST, "I002", "Invalid OAuth state parameter"),

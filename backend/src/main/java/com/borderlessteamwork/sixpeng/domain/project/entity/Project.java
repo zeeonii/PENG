@@ -69,6 +69,10 @@ public class Project {
         this.status = status;
     }
 
+    public void updateName(String name) {
+        this.name = name;
+    }
+
     public boolean isOwnedBy(Long memberId) {
         return createdBy.getId().equals(memberId);
     }

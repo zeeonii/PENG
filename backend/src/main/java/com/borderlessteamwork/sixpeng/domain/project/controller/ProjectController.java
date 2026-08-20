@@ -2,6 +2,8 @@ package com.borderlessteamwork.sixpeng.domain.project.controller;
 
 import com.borderlessteamwork.sixpeng.domain.project.dto.request.ProjectCreateRequest;
 import com.borderlessteamwork.sixpeng.domain.project.dto.request.ProjectMemberInviteRequest;
+import com.borderlessteamwork.sixpeng.domain.project.dto.request.ProjectMemberRoleUpdateRequest;
+import com.borderlessteamwork.sixpeng.domain.project.dto.request.ProjectNameUpdateRequest;
 import com.borderlessteamwork.sixpeng.domain.project.dto.request.ProjectStatusUpdateRequest;
 import com.borderlessteamwork.sixpeng.domain.project.dto.response.ProjectMemberResponse;
 import com.borderlessteamwork.sixpeng.domain.project.dto.response.ProjectResponse;
@@ -62,6 +64,20 @@ public class ProjectController {
         return ProjectResponse.from(projectService.updateStatus(projectId, memberId, request));
     }
 
+    @PatchMapping("/{projectId}/name")
+    public ProjectResponse updateProjectName(@CurrentMember Long memberId,
+                                             @PathVariable Long projectId,
+                                             @Valid @RequestBody ProjectNameUpdateRequest request) {
+        return ProjectResponse.from(projectService.updateName(projectId, memberId, request));
+    }
+
+    @DeleteMapping("/{projectId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteProject(@CurrentMember Long memberId,
+                              @PathVariable Long projectId) {
+        projectService.delete(projectId, memberId);
+    }
+
     @GetMapping("/{projectId}/members")
     public List<ProjectMemberResponse> getProjectMembers(@CurrentMember Long memberId,
                                                          @PathVariable Long projectId) {
@@ -84,5 +100,13 @@ public class ProjectController {
                                     @PathVariable Long projectId,
                                     @PathVariable Long targetMemberId) {
         projectService.removeMember(projectId, memberId, targetMemberId);
+    }
+
+    @PatchMapping("/{projectId}/members/{targetMemberId}/role")
+    public ProjectMemberResponse updateProjectMemberRole(@CurrentMember Long memberId,
+                                                          @PathVariable Long projectId,
+                                                          @PathVariable Long targetMemberId,
+                                                          @Valid @RequestBody ProjectMemberRoleUpdateRequest request) {
+        return ProjectMemberResponse.from(projectService.updateMemberRole(projectId, memberId, targetMemberId, request));
     }
 }

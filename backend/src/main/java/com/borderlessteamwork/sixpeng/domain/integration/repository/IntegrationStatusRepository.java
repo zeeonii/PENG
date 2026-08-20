@@ -12,4 +12,7 @@ public interface IntegrationStatusRepository extends JpaRepository<IntegrationSt
     Optional<IntegrationStatus> findByProjectIdAndType(Long projectId, IntegrationType type);
 
     List<IntegrationStatus> findAllByProjectId(Long projectId);
+
+    /** 프로젝트 삭제 시 연동 상태 행을 정리하는 용도. */
+    void deleteByProjectId(Long projectId);
 }

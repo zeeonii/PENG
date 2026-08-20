@@ -15,4 +15,7 @@ public interface BriefingRepository extends JpaRepository<Briefing, Long> {
 
     /** 프로젝트 홈의 "최근 활동" 피드용. 특정 회원이 아니라 프로젝트 전체 기준이다. */
     List<Briefing> findTop10ByProjectIdAndHasUpdateTrueOrderByCreatedAtDesc(Long projectId);
+
+    /** 프로젝트 삭제 시 브리핑 행을 정리하는 용도. briefing_source가 FK로 참조하므로 먼저 지워야 한다. */
+    void deleteByProjectId(Long projectId);
 }
