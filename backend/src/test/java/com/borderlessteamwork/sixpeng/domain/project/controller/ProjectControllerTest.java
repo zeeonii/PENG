@@ -5,6 +5,7 @@ import com.borderlessteamwork.sixpeng.domain.member.entity.Member;
 import com.borderlessteamwork.sixpeng.domain.member.repository.MemberRepository;
 import com.borderlessteamwork.sixpeng.domain.project.entity.Project;
 import com.borderlessteamwork.sixpeng.domain.project.entity.ProjectMember;
+import com.borderlessteamwork.sixpeng.domain.project.entity.ProjectStatus;
 import com.borderlessteamwork.sixpeng.domain.project.repository.ProjectMemberRepository;
 import com.borderlessteamwork.sixpeng.domain.project.repository.ProjectRepository;
 import com.borderlessteamwork.sixpeng.support.TestLogin;
@@ -22,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -266,5 +268,166 @@ class ProjectControllerTest {
                                 """))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("P002"));
+    }
+
+    @Test
+    @DisplayName("새로 만든 프로젝트는 PENDING 상태다")
+    void createdProjectStartsPending() throws Exception {
+        mockMvc.perform(post("/projects").with(TestLogin.as(owner))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "sixpeng"}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("PENDING"));
+
+        assertThat(projectRepository.findAll().getFirst().getStatus()).isEqualTo(ProjectStatus.PENDING);
+    }
+
+    @Test
+    @DisplayName("status 파라미터가 없으면 상태와 무관하게 전체가 나온다")
+    void listWithoutStatusReturnsAll() throws Exception {
+        createProject("pending", owner);
+        createProject("running", owner).updateStatus(ProjectStatus.IN_PROGRESS);
+        createProject("done", owner).updateStatus(ProjectStatus.COMPLETED);
+
+        mockMvc.perform(get("/projects").with(TestLogin.as(owner)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(3)));
+    }
+
+    @Test
+    @DisplayName("status 로 목록을 거를 수 있다")
+    void listFilteredByStatus() throws Exception {
+        createProject("pending", owner);
+        createProject("running", owner).updateStatus(ProjectStatus.IN_PROGRESS);
+        createProject("done", owner).updateStatus(ProjectStatus.COMPLETED);
+
+        mockMvc.perform(get("/projects").param("status", "IN_PROGRESS").with(TestLogin.as(owner)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].name").value("running"))
+                .andExpect(jsonPath("$[0].status").value("IN_PROGRESS"));
+
+        mockMvc.perform(get("/projects").param("status", "PENDING").with(TestLogin.as(owner)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].name").value("pending"));
+    }
+
+    @Test
+    @DisplayName("상태로 걸러도 내가 참여한 프로젝트만 나온다")
+    void listFilteredByStatusStillScopedToMe() throws Exception {
+        createProject("mine", owner).updateStatus(ProjectStatus.IN_PROGRESS);
+        createProject("someone-else", outsider).updateStatus(ProjectStatus.IN_PROGRESS);
+
+        mockMvc.perform(get("/projects").param("status", "IN_PROGRESS").with(TestLogin.as(owner)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].name").value("mine"));
+    }
+
+    @Test
+    @DisplayName("enum 에 없는 status 값은 500 이 아니라 400 이다")
+    void listRejectsUnknownStatus() throws Exception {
+        // 프론트가 한동안 한글 라벨("진행중")로 필터링하고 있었어서 실제로 밟기 쉬운 경로다.
+        mockMvc.perform(get("/projects").param("status", "진행중").with(TestLogin.as(owner)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("C001"));
+    }
+
+    @Test
+    @DisplayName("상태를 변경하면 200 이고 바뀐 값이 내려온다")
+    void updateStatus() throws Exception {
+        Project project = createProject("mine", owner);
+
+        mockMvc.perform(patch("/projects/{id}/status", project.getId()).with(TestLogin.as(owner))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"status": "IN_PROGRESS"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(project.getId()))
+                .andExpect(jsonPath("$.status").value("IN_PROGRESS"));
+
+        mockMvc.perform(get("/projects/{id}", project.getId()).with(TestLogin.as(owner)))
+                .andExpect(jsonPath("$.status").value("IN_PROGRESS"));
+    }
+
+    @Test
+    @DisplayName("생성자가 아닌 참여자도 상태를 바꿀 수 있다")
+    void participantCanUpdateStatus() throws Exception {
+        Project project = createProject("mine", owner);
+        projectMemberRepository.save(ProjectMember.of(project, teammate, "Backend"));
+
+        mockMvc.perform(patch("/projects/{id}/status", project.getId()).with(TestLogin.as(teammate))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"status": "COMPLETED"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("COMPLETED"));
+    }
+
+    @Test
+    @DisplayName("참여자가 아니면 상태를 바꿀 수 없다")
+    void outsiderCannotUpdateStatus() throws Exception {
+        Project project = createProject("mine", owner);
+
+        mockMvc.perform(patch("/projects/{id}/status", project.getId()).with(TestLogin.as(outsider))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"status": "COMPLETED"}
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("P002"));
+
+        assertThat(projectRepository.findById(project.getId()).orElseThrow().getStatus())
+                .isEqualTo(ProjectStatus.PENDING);
+    }
+
+    @Test
+    @DisplayName("없는 프로젝트의 상태를 바꾸면 404 다")
+    void updateStatusNotFound() throws Exception {
+        mockMvc.perform(patch("/projects/{id}/status", 9_999_999L).with(TestLogin.as(owner))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"status": "COMPLETED"}
+                                """))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("P001"));
+    }
+
+    @Test
+    @DisplayName("status 가 없거나 enum 에 없는 값이면 400 이다")
+    void updateStatusRejectsInvalidBody() throws Exception {
+        Project project = createProject("mine", owner);
+
+        mockMvc.perform(patch("/projects/{id}/status", project.getId()).with(TestLogin.as(owner))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("C001"));
+
+        mockMvc.perform(patch("/projects/{id}/status", project.getId()).with(TestLogin.as(owner))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"status": "ARCHIVED"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("C001"));
+    }
+
+    @Test
+    @DisplayName("상태 변경도 CSRF 토큰이 없으면 403 이다")
+    void updateStatusRequiresCsrfToken() throws Exception {
+        Project project = createProject("mine", owner);
+
+        mockMvc.perform(patch("/projects/{id}/status", project.getId()).with(TestLogin.withoutCsrf(owner))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"status": "IN_PROGRESS"}
+                                """))
+                .andExpect(status().isForbidden());
     }
 }

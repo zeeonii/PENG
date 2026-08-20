@@ -4,8 +4,10 @@ import com.borderlessteamwork.sixpeng.domain.member.entity.Member;
 import com.borderlessteamwork.sixpeng.domain.member.repository.MemberRepository;
 import com.borderlessteamwork.sixpeng.domain.project.dto.request.ProjectCreateRequest;
 import com.borderlessteamwork.sixpeng.domain.project.dto.request.ProjectMemberInviteRequest;
+import com.borderlessteamwork.sixpeng.domain.project.dto.request.ProjectStatusUpdateRequest;
 import com.borderlessteamwork.sixpeng.domain.project.entity.Project;
 import com.borderlessteamwork.sixpeng.domain.project.entity.ProjectMember;
+import com.borderlessteamwork.sixpeng.domain.project.entity.ProjectStatus;
 import com.borderlessteamwork.sixpeng.domain.project.repository.ProjectMemberRepository;
 import com.borderlessteamwork.sixpeng.domain.project.repository.ProjectRepository;
 import com.borderlessteamwork.sixpeng.global.exception.BusinessException;
@@ -41,9 +43,26 @@ public class ProjectService {
         return project;
     }
 
-    /** 내가 참여 중인 프로젝트만 보인다. */
-    public List<Project> findMyProjects(Long memberId) {
-        return projectMemberRepository.findProjectsByMemberId(memberId);
+    /**
+     * 내가 참여 중인 프로젝트만 보인다.
+     *
+     * @param status null 이면 상태와 무관하게 전체를 반환한다.
+     */
+    public List<Project> findMyProjects(Long memberId, ProjectStatus status) {
+        if (status == null) {
+            return projectMemberRepository.findProjectsByMemberId(memberId);
+        }
+        return projectMemberRepository.findProjectsByMemberIdAndStatus(memberId, status);
+    }
+
+    /** 상태 변경은 참여자면 누구나 할 수 있다. invite/removeMember 와 같은 규칙이다. */
+    @Transactional
+    public Project updateStatus(Long projectId, Long memberId, ProjectStatusUpdateRequest request) {
+        Project project = findProjectById(projectId);
+        validateParticipant(projectId, memberId);
+
+        project.updateStatus(request.status());
+        return project;
     }
 
     public Project findProject(Long projectId, Long memberId) {
