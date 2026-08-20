@@ -745,6 +745,10 @@ components:
         timezone:
           type: string
           nullable: true
+        duty:
+          type: string
+          nullable: true
+          description: 담당 업무. 예 - 백엔드 개발
         isAiTeammate:
           type: boolean
           description: |
@@ -756,6 +760,7 @@ components:
         role: AI
         country: null
         timezone: null
+        duty: null
         isAiTeammate: true
 
     ProjectMemberInviteRequest:

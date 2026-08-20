@@ -192,6 +192,19 @@ class ProjectControllerTest {
     }
 
     @Test
+    @DisplayName("참여자 목록에 담당 업무가 포함된다")
+    void memberListIncludesDuty() throws Exception {
+        Project project = createProject("mine", owner);
+        owner.updateProfile(null, null, null, "백엔드 개발", owner.isShowOriginalText(), owner.isShowTranslatedText());
+        memberRepository.save(owner);
+
+        mockMvc.perform(get("/projects/{id}/members", project.getId()).with(TestLogin.as(owner)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].memberId").value(owner.getId()))
+                .andExpect(jsonPath("$[0].duty").value("백엔드 개발"));
+    }
+
+    @Test
     @DisplayName("가입하지 않은 이메일로 초대하면 404 다")
     void inviteUnknownEmail() throws Exception {
         Project project = createProject("mine", owner);
