@@ -16,6 +16,7 @@ import {
   getProjectMembers,
   inviteProjectMember,
   removeProjectMember,
+  updateProjectMemberRole,
 } from "../../../../api/project.js";
 import { memberDisplayName } from "../../../../utils/member.js";
 import { useUser } from "../../../../contexts/UserContext.jsx";
@@ -31,6 +32,11 @@ export default function MembersTab({ projectId }) {
   const [inviteRole, setInviteRole] = useState("");
   const [inviteError, setInviteError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const [editingRoleId, setEditingRoleId] = useState(null);
+  const [editingRoleValue, setEditingRoleValue] = useState("");
+  const [roleSaving, setRoleSaving] = useState(false);
+  const [roleError, setRoleError] = useState(null);
 
   useEffect(() => {
     let ignore = false;
@@ -57,6 +63,36 @@ export default function MembersTab({ projectId }) {
       setMembers((prev) => prev.filter((member) => member.memberId !== memberId));
     } catch {
       setError(new Error(`${name}님을 내보낼 수 없어요. (프로젝트 생성자는 내보낼 수 없습니다)`));
+    }
+  };
+
+  const startEditingRole = (member) => {
+    setRoleError(null);
+    setEditingRoleId(member.memberId);
+    setEditingRoleValue(member.role ?? "");
+  };
+
+  const cancelEditingRole = () => {
+    setEditingRoleId(null);
+    setEditingRoleValue("");
+  };
+
+  const saveEditingRole = async () => {
+    const trimmed = editingRoleValue.trim();
+    if (!trimmed) return;
+
+    setRoleSaving(true);
+    setRoleError(null);
+    try {
+      const { data } = await updateProjectMemberRole(projectId, editingRoleId, trimmed);
+      setMembers((prev) =>
+        prev.map((member) => (member.memberId === editingRoleId ? { ...member, role: data.role } : member)),
+      );
+      cancelEditingRole();
+    } catch {
+      setRoleError("역할을 수정하지 못했어요.");
+    } finally {
+      setRoleSaving(false);
     }
   };
 
@@ -113,6 +149,7 @@ export default function MembersTab({ projectId }) {
         </form>
       )}
       {inviteError && <p className="mb-4 text-sm text-danger">{inviteError}</p>}
+      {roleError && <p className="mb-4 text-sm text-danger">{roleError}</p>}
 
       {loading && <p className="text-sm text-muted">불러오는 중...</p>}
       {error && <p className="mb-4 text-sm text-danger">{error.message}</p>}
@@ -147,8 +184,32 @@ export default function MembersTab({ projectId }) {
                       </strong>
                     </span>
                   </td>
-                  <td className="truncate px-4 py-3 text-muted">
-                    {member.role ?? "-"}
+                  <td className="px-4 py-3 text-muted">
+                    {editingRoleId === member.memberId ? (
+                      <div className="flex items-center gap-1">
+                        <Input
+                          value={editingRoleValue}
+                          onChange={(event) => setEditingRoleValue(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") saveEditingRole();
+                            if (event.key === "Escape") cancelEditingRole();
+                          }}
+                          disabled={roleSaving}
+                          autoFocus
+                          className="text-sm"
+                        />
+                      </div>
+                    ) : member.isAiTeammate ? (
+                      <span className="block truncate">{member.role ?? "-"}</span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => startEditingRole(member)}
+                        className="block w-full truncate text-left hover:text-primary hover:underline"
+                      >
+                        {member.role ?? "-"}
+                      </button>
+                    )}
                   </td>
                   {/* ProjectMemberResponse에 duty 필드가 아직 없어 다른 팀원 것은 표시 불가.
                       내 행만 useUser()로 이미 가진 내 담당 업무를 보여준다. 백엔드에 필드
