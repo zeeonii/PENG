@@ -419,15 +419,15 @@ class ProjectControllerTest {
     }
 
     @Test
-    @DisplayName("상태 변경도 CSRF 토큰이 없으면 403 이다")
-    void updateStatusRequiresCsrfToken() throws Exception {
+    @DisplayName("로그인하지 않으면 상태를 변경할 수 없다")
+    void updateStatusRequiresLogin() throws Exception {
         Project project = createProject("mine", owner);
 
-        mockMvc.perform(patch("/projects/{id}/status", project.getId()).with(TestLogin.withoutCsrf(owner))
+        mockMvc.perform(patch("/projects/{id}/status", project.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"status": "IN_PROGRESS"}
                                 """))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 }
