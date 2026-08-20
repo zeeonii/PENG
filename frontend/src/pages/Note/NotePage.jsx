@@ -224,7 +224,7 @@ export default function NotePage() {
                                 {primaryText}
                               </div>
                               {showTranslationCaption && (
-                                <p className={`mt-1 text-xs text-muted ${mine ? "text-right" : ""}`}>번역 · {message.translatedText}</p>
+                                <p className={`mt-1 text-xs text-muted ${mine ? "text-right" : ""}`}>{message.translatedText}</p>
                               )}
                             </div>
                           );

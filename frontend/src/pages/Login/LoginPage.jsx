@@ -14,7 +14,7 @@ export default function LoginPage() {
             밤사이 흩어진 맥락을<br />아침 한 번에.
           </h1>
           <p className="mt-5 text-sm leading-6 text-white/70">
-            회의와 문서, 팀의 결정을 기억하는 MORROW와<br />더 자연스럽게 협업하세요.
+            회의와 문서, 팀의 결정을 기억하는 REMI와<br />더 자연스럽게 협업하세요.
           </p>
         </div>
       </section>
