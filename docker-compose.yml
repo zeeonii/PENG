@@ -40,6 +40,10 @@ services:
       - chromadb
     env_file:
       - .env
+    environment:
+      # 컨테이너 기본 시간대(UTC)로 두면 LocalDateTime.now()가 UTC로 찍히는데,
+      # 프론트는 시간대 표시 없는 값을 그냥 로컬(KST)로 해석해서 9시간 뒤처져 보인다.
+      - TZ=Asia/Seoul
 
 volumes:
   mysql-data:
