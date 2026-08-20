@@ -30,6 +30,13 @@ export const getProject = (projectId) => client.get(`/projects/${projectId}`);
 export const updateProjectStatus = (projectId, status) =>
   client.patch(`/projects/${projectId}/status`, { status });
 
+/** 프로젝트 이름 수정. 참여자면 누구나 가능. */
+export const updateProjectName = (projectId, name) =>
+  client.patch(`/projects/${projectId}/name`, { name });
+
+/** 프로젝트 삭제. 생성자만 가능하며 되돌릴 수 없습니다. */
+export const deleteProject = (projectId) => client.delete(`/projects/${projectId}`);
+
 /** 프로젝트 참여자 목록 */
 export const getProjectMembers = (projectId) =>
   client.get(`/projects/${projectId}/members`);
