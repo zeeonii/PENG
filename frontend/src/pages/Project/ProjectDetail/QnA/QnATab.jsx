@@ -27,7 +27,9 @@ export default function QnATab({ projectId }) {
         if (ignore) return;
         // 응답이 ApiResponse<QnaHistoryPageResponse>로 감싸져 있어
         // 실제 목록은 data.data.content에 들어있다.
-        setHistory(data.data?.content ?? []);
+        // 백엔드는 최신순(내림차순)으로 내려주는데, 채팅처럼 오래된 게 위·최신이
+        // 아래로 오도록 뒤집는다 (질문 전송 직후 로컬 추가와 방향을 맞추기 위함).
+        setHistory([...(data.data?.content ?? [])].reverse());
       })
       .catch((err) => {
         if (!ignore) setError(err);
