@@ -102,7 +102,7 @@ class IntegrationServiceImplTest {
 
         String redirectUrl = integrationService.handleNotionCallback("code123", "p1", MEMBER_ID);
 
-        assertThat(redirectUrl).isEqualTo("http://localhost:5173/projects/1/integrations?connected=notion");
+        assertThat(redirectUrl).isEqualTo("http://localhost:5173/projects/1?connected=notion");
     }
 
     @Test
@@ -212,7 +212,7 @@ class IntegrationServiceImplTest {
 
         String redirectUrl = integrationService.handleGoogleMeetCallback("code123", "p1", MEMBER_ID);
 
-        assertThat(redirectUrl).isEqualTo("http://localhost:5173/projects/1/integrations?connected=google-meet");
+        assertThat(redirectUrl).isEqualTo("http://localhost:5173/projects/1?connected=google-meet");
     }
 
     @Test

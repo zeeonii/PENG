@@ -2,20 +2,25 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import MainLayout from "../../../../layouts/MainLayout.jsx";
 import Avatar from "../../../../components/Avatar.jsx";
-import Badge from "../../../../components/Badge.jsx";
 import Button from "../../../../components/Button.jsx";
 import Tab from "../../../../components/Tab.jsx";
 import BriefingTab from "../Briefing/BriefingTab.jsx";
 import QnATab from "../QnA/QnATab.jsx";
 import MembersTab from "../Members/MembersTab.jsx";
 import IntegrationTab from "../Integration/IntegrationTab.jsx";
-import { getProject, getProjectMembers } from "../../../../api/project.js";
+import { getProject, getProjectMembers, updateProjectStatus } from "../../../../api/project.js";
 import { getTodayBriefing } from "../../../../api/briefing.js";
 import { getRecentActivities } from "../../../../api/activity.js";
 import { memberDisplayName } from "../../../../utils/member.js";
+import { projectStatusLabel } from "../../../../utils/project.js";
 
-// 명세에 status/description/기간 필드가 없어 안전하게 가드 처리했습니다.
-const statusVariant = { 진행중: "active", 검토중: "danger", 완료: "success" };
+// 명세에 description 필드가 없어 안전하게 가드 처리했습니다.
+const STATUS_SELECT_CLASSES = {
+  진행중: "bg-active/10 text-active",
+  진행전: "bg-secondary text-primary",
+  완료: "bg-success/10 text-success",
+};
+const STATUS_OPTIONS = ["PENDING", "IN_PROGRESS", "COMPLETED"];
 
 function ProjectOverview({ members, briefing, activities }) {
   return (
@@ -57,7 +62,7 @@ function ProjectOverview({ members, briefing, activities }) {
       <section className="lg:col-span-2">
         <h2 className="mb-3 text-base font-semibold text-primary">최근 활동</h2>
         {activities.length > 0 ? (
-          <ul className="overflow-hidden rounded-xl border border-border bg-white divide-y divide-border">
+          <ul className="max-h-80 divide-y divide-border overflow-y-auto rounded-xl border border-border bg-white">
             {activities.map((activity, index) => (
               <li key={index} className="px-5 py-4 text-sm text-primary">{activity.description}</li>
             ))}
@@ -84,6 +89,8 @@ export default function ProjectHomePage() {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [statusSaving, setStatusSaving] = useState(false);
+  const [statusError, setStatusError] = useState(null);
 
   useEffect(() => {
     let ignore = false;
@@ -115,6 +122,20 @@ export default function ProjectHomePage() {
     };
   }, [projectId]);
 
+  const handleStatusChange = async (event) => {
+    const nextStatus = event.target.value;
+    setStatusSaving(true);
+    setStatusError(null);
+    try {
+      const { data } = await updateProjectStatus(projectId, nextStatus);
+      setProject(data);
+    } catch {
+      setStatusError("프로젝트 상태를 변경하지 못했어요.");
+    } finally {
+      setStatusSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <MainLayout>
@@ -139,7 +160,18 @@ export default function ProjectHomePage() {
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-bold text-primary">{project.name}</h1>
             {project.status && (
-              <Badge variant={statusVariant[project.status]}>{project.status}</Badge>
+              <select
+                value={project.status}
+                onChange={handleStatusChange}
+                disabled={statusSaving}
+                className={`rounded-full border-0 px-2.5 py-0.5 text-xs font-medium ${STATUS_SELECT_CLASSES[projectStatusLabel(project.status)]}`}
+              >
+                {STATUS_OPTIONS.map((status) => (
+                  <option key={status} value={status}>
+                    {projectStatusLabel(status)}
+                  </option>
+                ))}
+              </select>
             )}
             <Link to={`/projects/${project.id}/edit`}>
               <Button variant="secondary" className="px-3 py-1.5 text-xs">
@@ -150,6 +182,7 @@ export default function ProjectHomePage() {
           {project.description && (
             <p className="mt-3 text-sm text-muted">{project.description}</p>
           )}
+          {statusError && <p className="mt-2 text-sm text-danger">{statusError}</p>}
         </header>
 
         <Tab

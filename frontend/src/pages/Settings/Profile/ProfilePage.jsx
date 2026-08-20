@@ -11,7 +11,7 @@ import Button from "../../../components/Button.jsx";
 import Input from "../../../components/Input.jsx";
 import { updateMe } from "../../../api/member.js";
 import { useUser } from "../../../contexts/UserContext.jsx";
-import { LANGUAGE_OPTIONS, translationDisplay } from "../../../api/mock/settingsData.js";
+import { LANGUAGE_OPTIONS } from "../../../api/mock/settingsData.js";
 
 function Toggle({ checked, onChange, label }) {
   return (
@@ -39,9 +39,15 @@ function Toggle({ checked, onChange, label }) {
 
 export default function ProfilePage() {
   const { user, loading, refresh } = useUser();
-  const [form, setForm] = useState({ language: "KR", country: "", timezone: "", duty: "" });
+  const [form, setForm] = useState({
+    language: "KR",
+    country: "",
+    timezone: "",
+    duty: "",
+    showOriginalText: true,
+    showTranslatedText: true,
+  });
   const [loadedUser, setLoadedUser] = useState(null);
-  const [display, setDisplay] = useState(translationDisplay);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [saved, setSaved] = useState(false);
@@ -55,10 +61,8 @@ export default function ProfilePage() {
       country: user.country ?? "",
       timezone: user.timezone ?? "",
       duty: user.duty ?? "",
-    });
-    setDisplay({
-      showOriginal: user.showOriginalText ?? true,
-      showTranslated: user.showTranslatedText ?? true,
+      showOriginalText: user.showOriginalText ?? true,
+      showTranslatedText: user.showTranslatedText ?? true,
     });
   }
 
@@ -66,9 +70,9 @@ export default function ProfilePage() {
 
   // 원문과 번역문 중 최소 하나는 항상 표시되어야 합니다.
   const updateDisplay = (key, value) => {
-    const next = { ...display, [key]: value };
-    if (!next.showOriginal && !next.showTranslated) return;
-    setDisplay(next);
+    const next = { ...form, [key]: value };
+    if (!next.showOriginalText && !next.showTranslatedText) return;
+    setForm(next);
   };
 
   const handleSubmit = async (event) => {
@@ -77,11 +81,7 @@ export default function ProfilePage() {
     setError(null);
     setSaved(false);
     try {
-      await updateMe({
-        ...form,
-        showOriginalText: display.showOriginal,
-        showTranslatedText: display.showTranslated,
-      });
+      await updateMe(form);
       await refresh();
       setSaved(true);
     } catch {
@@ -161,13 +161,13 @@ export default function ProfilePage() {
           <div className="mt-4 space-y-3">
             <Toggle
               label="원문 표시"
-              checked={display.showOriginal}
-              onChange={(value) => updateDisplay("showOriginal", value)}
+              checked={form.showOriginalText}
+              onChange={(value) => updateDisplay("showOriginalText", value)}
             />
             <Toggle
               label="번역문 표시"
-              checked={display.showTranslated}
-              onChange={(value) => updateDisplay("showTranslated", value)}
+              checked={form.showTranslatedText}
+              onChange={(value) => updateDisplay("showTranslatedText", value)}
             />
           </div>
 
