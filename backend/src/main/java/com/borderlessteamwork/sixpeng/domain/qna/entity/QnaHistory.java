@@ -28,12 +28,16 @@ public class QnaHistory {
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
+    /**
+     * ddl-auto: update는 이미 만들어진 컬럼의 타입을 넓혀주지 못하므로, @Lob만으로는
+     * 부족할 수 있어 컬럼 타입을 명시한다 (document.content에서 겪은 것과 동일한 문제).
+     */
     @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "LONGTEXT")
     private String question;
 
     @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "LONGTEXT")
     private String answer;
 
     @Column(nullable = false, updatable = false)
