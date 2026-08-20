@@ -51,3 +51,7 @@ export const inviteProjectMember = (projectId, data) =>
 /** 참여자 내보내기 */
 export const removeProjectMember = (projectId, memberId) =>
   client.delete(`/projects/${projectId}/members/${memberId}`);
+
+/** 참여자 역할 수정. 참여자면 누구나 가능하나 AI 팀원 역할은 변경 불가(400). */
+export const updateProjectMemberRole = (projectId, memberId, role) =>
+  client.patch(`/projects/${projectId}/members/${memberId}/role`, { role });
