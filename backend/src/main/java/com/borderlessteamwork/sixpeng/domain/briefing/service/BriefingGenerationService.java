@@ -41,15 +41,6 @@ public class BriefingGenerationService {
     private final OpenAiService openAiService;
 
     public void generateTodayBriefingIfNeeded(Long projectId, Long memberId) {
-        LocalDateTime startOfToday = LocalDateTime.now().toLocalDate().atStartOfDay();
-
-        boolean alreadyGeneratedToday = briefingRepository
-                .findByProjectIdAndMemberIdOrderByCreatedAtDesc(projectId, memberId).stream()
-                .anyMatch(b -> !b.getCreatedAt().isBefore(startOfToday));
-        if (alreadyGeneratedToday) {
-            return;
-        }
-
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ENTITY_NOT_FOUND, "Project not found: id=" + projectId));
         Member member = memberRepository.findById(memberId)
@@ -70,6 +61,16 @@ public class BriefingGenerationService {
 
         BriefingDraft draft = summarizeForMember(member, newDocuments);
         if (draft == null) {
+            // 실제 브리핑은 아니지만, 이 문서 묶음을 검토했다는 사실 자체는 저장해
+            // "마지막으로 검토한 시점" 커서를 앞으로 옮긴다. 그러지 않으면 같은
+            // (무관한) 문서 묶음을 조회할 때마다 매번 다시 OpenAI에 보내게 된다.
+            Briefing noUpdate = Briefing.builder()
+                    .project(project)
+                    .member(member)
+                    .summary("")
+                    .build();
+            noUpdate.markNoUpdate();
+            briefingRepository.save(noUpdate);
             log.info("담당 업무와 관련된 변경사항이 없어 브리핑을 생성하지 않음: projectId={}, memberId={}", projectId, memberId);
             return;
         }

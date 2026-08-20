@@ -31,6 +31,7 @@ public class BriefingService {
 
         return briefingRepository.findByProjectIdAndMemberIdOrderByCreatedAtDesc(projectId, memberId)
                 .stream()
+                .filter(Briefing::isHasUpdate)
                 .filter(briefing -> !briefing.getCreatedAt().isBefore(startOfToday))
                 .map(briefing -> BriefingResponse.of(briefing, briefingSourceRepository.findByBriefingId(briefing.getId())))
                 .toList();
