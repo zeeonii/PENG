@@ -68,7 +68,9 @@ class IntegrationServiceImpl implements IntegrationService {
             log.warn("Notion 문서 수집 실패 (연동 상태는 유지됨): projectId={}", projectId, e);
         }
 
-        return frontendUrl + "/projects/" + projectId + "/integrations?connected=notion";
+        // 프론트 라우터에 /projects/{id}/integrations 경로가 없어(전부 catch-all -> /login),
+        // 실제로 존재하는 프로젝트 상세 경로로 보낸다.
+        return frontendUrl + "/projects/" + projectId + "?connected=notion";
     }
 
     /** 연동 시점의 Notion page들을 document로 수집한다. 이후 재동기화(주기적 갱신)는 후속 작업. */
@@ -112,7 +114,7 @@ class IntegrationServiceImpl implements IntegrationService {
             log.warn("Google Meet 문서 수집 실패 (연동 상태는 유지됨): projectId={}", projectId, e);
         }
 
-        return frontendUrl + "/projects/" + projectId + "/integrations?connected=google-meet";
+        return frontendUrl + "/projects/" + projectId + "?connected=google-meet";
     }
 
     /**
