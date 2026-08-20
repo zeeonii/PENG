@@ -82,4 +82,9 @@ public class IntegrationStatus {
         this.accessToken = accessToken;
         this.lastSyncedAt = LocalDateTime.now();
     }
+
+    /** 최초 연동이 아니라 주기적 재동기화(폴링)로 문서를 다시 읽어왔을 때 호출한다. */
+    public void markSynced() {
+        this.lastSyncedAt = LocalDateTime.now();
+    }
 }

@@ -16,4 +16,7 @@ public interface IntegrationService {
     String handleGoogleMeetCallback(String code, String state, Long memberId);
 
     List<IntegrationStatusResponse> getStatus(Long projectId, Long memberId);
+
+    /** 연동된 모든 프로젝트의 Notion 페이지를 다시 읽어와 변경사항을 반영한다 (주기적 폴링용). */
+    void resyncAllNotionConnections();
 }
