@@ -11,6 +11,7 @@ import tools.jackson.databind.JsonNode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * Notion 콘텐츠 조회 전용 클라이언트. 인가 코드 교환은 {@link NotionOAuthClient}가 담당한다.
@@ -27,7 +28,14 @@ class NotionContentClient {
         this.webClient = webClientBuilder.baseUrl("https://api.notion.com/v1").build();
     }
 
-    /** 이 Notion 연동(access token)이 접근 가능한 page들을 검색한다. 페이지네이션은 다루지 않고 첫 페이지만 가져온다. */
+    /**
+     * 이 Notion 연동(access token)이 접근 가능한 page들을 검색한다. 페이지네이션은 다루지 않고 첫 페이지만 가져온다.
+     *
+     * <p>Notion 데이터베이스(표)의 각 행도 그 자체로 하나의 page(parent가 database_id인)라서
+     * 이 필터에 걸린다. 다만 표 안에 입력한 내용은 본문 block이 아니라 그 행 page의
+     * properties(표의 각 컬럼)에 들어있어서, 본문만 읽는 fetchPageContent만으로는 비어
+     * 보인다. 그래서 여기서 search 응답에 이미 포함된 properties를 텍스트로 함께 뽑아둔다.
+     */
     List<NotionPage> searchAccessiblePages(String accessToken) {
         JsonNode response = post(accessToken, "/search",
                 Map.of("filter", Map.of("value", "page", "property", "object")));
@@ -36,10 +44,12 @@ class NotionContentClient {
         JsonNode results = response.path("results");
         if (results.isArray()) {
             for (JsonNode page : results) {
+                JsonNode properties = page.path("properties");
                 pages.add(new NotionPage(
                         page.path("id").asString(""),
-                        extractTitle(page.path("properties")),
-                        page.path("url").asString("")
+                        extractTitle(properties),
+                        page.path("url").asString(""),
+                        extractPropertiesText(properties)
                 ));
             }
         }
@@ -75,14 +85,61 @@ class NotionContentClient {
         for (Map.Entry<String, JsonNode> property : properties.properties()) {
             JsonNode value = property.getValue();
             if ("title".equals(value.path("type").asString(""))) {
-                StringBuilder title = new StringBuilder();
-                for (JsonNode richText : value.path("title")) {
-                    title.append(richText.path("plain_text").asString(""));
-                }
-                return title.toString();
+                return joinRichText(value.path("title"));
             }
         }
         return "";
+    }
+
+    /** 데이터베이스(표)의 한 행이 가진 속성(컬럼)값들을 "컬럼명: 값" 줄들로 합친다. */
+    private String extractPropertiesText(JsonNode properties) {
+        StringBuilder text = new StringBuilder();
+        for (Map.Entry<String, JsonNode> property : properties.properties()) {
+            String value = extractPropertyValueText(property.getValue());
+            if (!value.isBlank()) {
+                text.append(property.getKey()).append(": ").append(value).append(System.lineSeparator());
+            }
+        }
+        return text.toString();
+    }
+
+    private String extractPropertyValueText(JsonNode property) {
+        String type = property.path("type").asString("");
+        JsonNode value = property.path(type);
+        return switch (type) {
+            case "title", "rich_text" -> joinRichText(value);
+            case "select", "status" -> value.path("name").asString("");
+            case "multi_select" -> joinArray(value, item -> item.path("name").asString(""));
+            case "people" -> joinArray(value, item -> item.path("name").asString(""));
+            case "date" -> value.path("start").asString("");
+            case "checkbox" -> value.asBoolean(false) ? "true" : "";
+            case "number", "url", "email", "phone_number" -> value.isNull() ? "" : value.asString("");
+            default -> "";
+        };
+    }
+
+    private String joinRichText(JsonNode richTextArray) {
+        StringBuilder text = new StringBuilder();
+        if (richTextArray.isArray()) {
+            for (JsonNode richText : richTextArray) {
+                text.append(richText.path("plain_text").asString(""));
+            }
+        }
+        return text.toString();
+    }
+
+    private String joinArray(JsonNode array, Function<JsonNode, String> extractor) {
+        if (!array.isArray()) {
+            return "";
+        }
+        StringBuilder joined = new StringBuilder();
+        for (JsonNode item : array) {
+            if (!joined.isEmpty()) {
+                joined.append(", ");
+            }
+            joined.append(extractor.apply(item));
+        }
+        return joined.toString();
     }
 
     private JsonNode post(String accessToken, String uri, Object body) {
