@@ -34,10 +34,17 @@ Table member {
 Table project {
   id bigint [pk, increment]
   name varchar(255) [not null]
+  status varchar(20) [not null, default: 'PENDING', note: 'PENDING(진행전) / IN_PROGRESS(진행중) / COMPLETED(완료). 생성 시 PENDING']
   created_by bigint [not null, ref: > member.id]
   created_at datetime(6) [not null]
 
-  Note: '생성자는 만들어질 때 role=PM 으로, AI 팀원은 role=AI 로 project_member 에 함께 등록된다'
+  Note: '''
+    생성자는 만들어질 때 role=PM 으로, AI 팀원은 role=AI 로 project_member 에 함께 등록된다.
+
+    status 는 MySQL 네이티브 enum 이 아니라 varchar 다. 네이티브 enum 이면
+    값을 추가할 때 ddl-auto: update 가 컬럼을 바꿔주지 못한다.
+    표시 문구(진행전/진행중/완료)는 프론트가 매핑하며 응답에는 enum 이름만 나간다.
+  '''
 }
 
 Table project_member {
