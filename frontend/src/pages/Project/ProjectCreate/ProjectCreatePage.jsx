@@ -11,12 +11,31 @@ import {
   inviteProjectMember,
   removeProjectMember,
 } from "../../../api/project.js";
-import { connectNotion as connectNotionIntegration } from "../../../api/integration.js";
+import { connectNotion, connectGoogleMeet } from "../../../api/integration.js";
+import GoogleMeetIcon from "../../../components/icons/GoogleMeetIcon.jsx";
+import NotionIcon from "../../../components/icons/NotionIcon.jsx";
 import { memberDisplayName } from "../../../utils/member.js";
 
 // 명세상 프로젝트 이름 수정 API(PATCH /projects/{id})가 없어 이 화면은
 // "수정" 대신 기존 프로젝트의 팀원·연동을 관리하는 용도로 동작합니다.
 const emptyInvite = { email: "", role: "" };
+
+const INTEGRATIONS = [
+  {
+    type: "NOTION",
+    label: "Notion",
+    description: "프로젝트 관련 문서를 함께 동기화합니다.",
+    Icon: NotionIcon,
+    connect: connectNotion,
+  },
+  {
+    type: "GOOGLE_MEET",
+    label: "Google Meet",
+    description: "회의록을 자동으로 수집해 동기화합니다.",
+    Icon: GoogleMeetIcon,
+    connect: connectGoogleMeet,
+  },
+];
 
 export default function ProjectCreatePage() {
   const navigate = useNavigate();
@@ -29,6 +48,7 @@ export default function ProjectCreatePage() {
   const [invites, setInvites] = useState([emptyInvite]);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  const [connecting, setConnecting] = useState(null);
 
   useEffect(() => {
     if (!isEditing) return;
@@ -69,11 +89,13 @@ export default function ProjectCreatePage() {
     }
   };
 
-  const connectNotion = async () => {
+  const handleConnect = async (integration) => {
+    setConnecting(integration.type);
     try {
-      await connectNotionIntegration(projectId);
+      await integration.connect(projectId);
     } catch {
-      setSubmitError("Notion 연동을 시작하지 못했어요.");
+      setSubmitError(`${integration.label} 연동을 시작하지 못했어요.`);
+      setConnecting(null);
     }
   };
 
@@ -184,7 +206,7 @@ export default function ProjectCreatePage() {
               onAdd={() => setInvites((current) => [...current, emptyInvite])} />
 
             <p className="border-t border-border pt-7 text-xs text-muted">
-              Notion 연동은 프로젝트 생성 후 관리 화면에서 할 수 있어요.
+              Notion·Google Meet 연동은 프로젝트 생성 후 관리 화면에서 할 수 있어요.
             </p>
 
             <div className="flex justify-end gap-2 border-t border-border pt-6">
@@ -235,17 +257,29 @@ export default function ProjectCreatePage() {
             </form>
 
             <section className="rounded-xl border border-border bg-white p-6 sm:p-8">
-              <h2 className="text-base font-semibold text-primary">Notion 워크스페이스 연동</h2>
-              <div className="mt-4 flex items-center justify-between gap-4 rounded-lg border border-border p-4">
-                <div>
-                  <p className="text-sm font-medium text-primary">Notion</p>
-                  <p className="mt-1 text-xs text-muted">
-                    프로젝트 관련 문서를 함께 동기화합니다.
-                  </p>
-                </div>
-                <Button variant="secondary" onClick={connectNotion}>
-                  연동하기
-                </Button>
+              <h2 className="text-base font-semibold text-primary">연동 관리</h2>
+              <div className="mt-4 space-y-3">
+                {INTEGRATIONS.map((integration) => (
+                  <div
+                    key={integration.type}
+                    className="flex items-center justify-between gap-4 rounded-lg border border-border p-4"
+                  >
+                    <div className="flex items-center gap-3">
+                      <integration.Icon className="h-8 w-8 shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-primary">{integration.label}</p>
+                        <p className="mt-1 text-xs text-muted">{integration.description}</p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="secondary"
+                      onClick={() => handleConnect(integration)}
+                      disabled={connecting === integration.type}
+                    >
+                      {connecting === integration.type ? "연결 중..." : "연동하기"}
+                    </Button>
+                  </div>
+                ))}
               </div>
             </section>
 
