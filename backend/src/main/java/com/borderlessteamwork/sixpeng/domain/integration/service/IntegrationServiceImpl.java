@@ -165,8 +165,8 @@ class IntegrationServiceImpl implements IntegrationService {
      */
     private void syncGoogleMeetDocuments(Long projectId, String accessToken) {
         for (GoogleConferenceRecord record : googleMeetContentClient.fetchRecentConferenceRecords(accessToken)) {
-            String content = googleMeetContentClient.fetchTranscriptContent(accessToken, record.name());
-            if (content.isBlank()) {
+            GoogleMeetTranscript transcript = googleMeetContentClient.fetchTranscriptContent(accessToken, record.name());
+            if (transcript.content().isBlank()) {
                 continue;
             }
             String title = "Google Meet 회의록 (" + record.startTime() + ")";
@@ -174,8 +174,8 @@ class IntegrationServiceImpl implements IntegrationService {
             Document document = documentRepository
                     .findByProjectIdAndSourceTypeAndSourceId(projectId, DocumentSourceType.GOOGLE_MEET, record.name())
                     .orElseGet(() -> Document.collect(
-                            projectId, DocumentSourceType.GOOGLE_MEET, record.name(), title, content, null));
-            document.updateContent(title, content, null);
+                            projectId, DocumentSourceType.GOOGLE_MEET, record.name(), title, transcript.content(), transcript.sourceUrl()));
+            document.updateContent(title, transcript.content(), transcript.sourceUrl());
             documentRepository.save(document);
             eventPublisher.publishEvent(new DocumentSavedEvent(document.getId()));
         }
