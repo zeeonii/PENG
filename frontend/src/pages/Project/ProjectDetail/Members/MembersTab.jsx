@@ -21,7 +21,6 @@ import {
   updateProjectMemberRole,
 } from "../../../../api/project.js";
 import { memberDisplayName } from "../../../../utils/member.js";
-import { useUser } from "../../../../contexts/UserContext.jsx";
 
 // 팀원 행 우측의 "⋯" 메뉴. 드롭다운은 document.body에 포털로 렌더링합니다.
 // 표를 감싼 컨테이너가 overflow-x-auto라 안에 absolute로 띄우면 아래쪽
@@ -83,7 +82,6 @@ function MemberActionsMenu({ isOpen, onToggle, canEditRole, onEditRole, onDelete
 }
 
 export default function MembersTab({ projectId }) {
-  const { user } = useUser();
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -266,12 +264,7 @@ export default function MembersTab({ projectId }) {
                       <span className="block truncate">{member.role ?? "-"}</span>
                     )}
                   </td>
-                  {/* ProjectMemberResponse에 duty 필드가 아직 없어 다른 팀원 것은 표시 불가.
-                      내 행만 useUser()로 이미 가진 내 담당 업무를 보여준다. 백엔드에 필드
-                      추가되면 member.duty로 교체 필요. */}
-                  <td className="truncate px-4 py-3 text-muted">
-                    {member.memberId === user?.id ? user.duty ?? "-" : "-"}
-                  </td>
+                  <td className="truncate px-4 py-3 text-muted">{member.duty ?? "-"}</td>
                   <td className="truncate px-4 py-3 text-muted">
                     {member.country
                       ? member.timezone
