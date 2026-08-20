@@ -7,6 +7,7 @@ import { getProjects, getProjectMembers } from "../../api/project.js";
 import { getTodayBriefing } from "../../api/briefing.js";
 import { useUser } from "../../contexts/UserContext.jsx";
 import { memberDisplayName } from "../../utils/member.js";
+import { projectStatusLabel } from "../../utils/project.js";
 
 const todayLabel = new Intl.DateTimeFormat("ko-KR", {
   month: "long",
@@ -14,7 +15,6 @@ const todayLabel = new Intl.DateTimeFormat("ko-KR", {
   weekday: "long",
 }).format(new Date());
 
-// 명세에 status 필드가 없어 값이 있을 때만 표시합니다.
 const statusVariant = { 진행중: "active", 진행전: "default", 완료: "success" };
 
 export default function HomePage() {
@@ -112,7 +112,7 @@ export default function HomePage() {
             <Link to="/projects" className="text-sm font-semibold text-muted hover:text-primary">전체 보기 →</Link>
           </div>
           <div className="overflow-hidden rounded-xl border border-border bg-white">
-            {projects.filter((project) => project.status !== "완료").slice(0, 3).map((project) => (
+            {projects.filter((project) => projectStatusLabel(project.status) !== "완료").slice(0, 3).map((project) => (
               <Link key={project.id} to={`/projects/${project.id}`} className="flex items-center gap-4 border-b border-border p-4 last:border-0 hover:bg-secondary">
                 <span className="grid h-10 w-10 place-items-center rounded-lg bg-secondary font-bold text-active">{project.name[0]}</span>
                 <span className="min-w-0 flex-1">
@@ -122,7 +122,9 @@ export default function HomePage() {
                   )}
                 </span>
                 {project.status && (
-                  <Badge variant={statusVariant[project.status]}>{project.status}</Badge>
+                  <Badge variant={statusVariant[projectStatusLabel(project.status)]}>
+                    {projectStatusLabel(project.status)}
+                  </Badge>
                 )}
                 <span className="hidden -space-x-1 sm:flex">
                   {project.members.slice(0, 3).map((member) => (

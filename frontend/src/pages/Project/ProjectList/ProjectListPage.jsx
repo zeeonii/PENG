@@ -7,10 +7,11 @@ import Button from "../../../components/Button.jsx";
 import Input from "../../../components/Input.jsx";
 import { getProjects, getProjectMembers } from "../../../api/project.js";
 import { memberDisplayName } from "../../../utils/member.js";
+import { projectStatusLabel } from "../../../utils/project.js";
 
 const filters = ["전체", "진행전", "진행중", "완료"];
 
-// 명세에 status/description/기간 필드가 없어 값이 있을 때만 표시합니다.
+// 명세에 description/기간 필드가 없어 값이 있을 때만 표시합니다.
 const statusVariant = { 진행중: "active", 진행전: "default", 완료: "success" };
 
 export default function ProjectListPage() {
@@ -53,7 +54,7 @@ export default function ProjectListPage() {
       projects.filter((project) => {
         const matchesKeyword = project.name.toLowerCase().includes(keyword.toLowerCase());
         const matchesStatus =
-          selectedFilter === "전체" || project.status === selectedFilter;
+          selectedFilter === "전체" || projectStatusLabel(project.status) === selectedFilter;
         return matchesKeyword && matchesStatus;
       }),
     [projects, keyword, selectedFilter],
@@ -155,7 +156,9 @@ export default function ProjectListPage() {
                   </div>
                   <div>
                     {project.status && (
-                      <Badge variant={statusVariant[project.status]}>{project.status}</Badge>
+                      <Badge variant={statusVariant[projectStatusLabel(project.status)]}>
+                        {projectStatusLabel(project.status)}
+                      </Badge>
                     )}
                   </div>
                   <div className="flex -space-x-1">
@@ -174,7 +177,9 @@ export default function ProjectListPage() {
             {filteredProjects.map((project) => (
               <Link key={project.id} to={`/projects/${project.id}`} className="rounded-xl border border-border bg-white p-5 transition-transform hover:-translate-y-0.5 hover:shadow-md">
                 {project.status && (
-                  <Badge variant={statusVariant[project.status]}>{project.status}</Badge>
+                  <Badge variant={statusVariant[projectStatusLabel(project.status)]}>
+                    {projectStatusLabel(project.status)}
+                  </Badge>
                 )}
                 <h2 className="mt-5 font-semibold text-primary">{project.name}</h2>
                 {project.description && (
