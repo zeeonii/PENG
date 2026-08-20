@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import MainLayout from "../../../layouts/MainLayout.jsx";
 import Avatar from "../../../components/Avatar.jsx";
@@ -22,56 +23,79 @@ const statusVariant = { 진행중: "active", 진행전: "default", 완료: "succ
 
 // 프로젝트 카드/행 우측의 "⋯" 메뉴. 클릭 시 이벤트가 부모 Link로 번지지
 // 않도록 각 핸들러에서 stopPropagation 합니다.
+//
+// 드롭다운은 document.body에 포털로 렌더링합니다. 목록 컨테이너가
+// 모서리를 둥글게 하려고 overflow-hidden을 쓰고 있어서, 그 안에
+// absolute로 띄우면 마지막 줄 근처 메뉴가 잘려 보이는 문제가 있었습니다.
 function ProjectActionsMenu({ isOwner, isOpen, onToggle, onEdit, onDelete, deleting }) {
+  const buttonRef = useRef(null);
+  const [position, setPosition] = useState(null);
+
+  const handleToggle = () => {
+    if (!isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setPosition({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+    }
+    onToggle();
+  };
+
   return (
-    <div className="relative shrink-0" onClick={(event) => event.stopPropagation()}>
+    <div className="relative shrink-0">
       <button
+        ref={buttonRef}
         type="button"
         onClick={(event) => {
           event.preventDefault();
-          onToggle();
+          event.stopPropagation();
+          handleToggle();
         }}
         aria-label="프로젝트 메뉴"
         className="rounded-full p-1.5 text-muted hover:bg-secondary hover:text-primary"
       >
         ⋯
       </button>
-      {isOpen && (
-        <>
-          <div
-            className="fixed inset-0 z-10"
-            onClick={(event) => {
-              event.preventDefault();
-              onToggle();
-            }}
-          />
-          <div className="absolute right-0 z-20 mt-1 w-32 overflow-hidden rounded-lg border border-border bg-white py-1 shadow-lg">
-            <button
-              type="button"
+      {isOpen &&
+        position &&
+        createPortal(
+          <>
+            <div
+              className="fixed inset-0 z-40"
               onClick={(event) => {
                 event.preventDefault();
-                onEdit();
+                onToggle();
               }}
-              className="block w-full px-3 py-2 text-left text-sm text-primary hover:bg-secondary"
+            />
+            <div
+              style={{ position: "fixed", top: position.top, right: position.right }}
+              className="z-50 w-32 overflow-hidden rounded-lg border border-border bg-white py-1 shadow-lg"
             >
-              수정
-            </button>
-            {isOwner && (
               <button
                 type="button"
                 onClick={(event) => {
                   event.preventDefault();
-                  onDelete();
+                  onEdit();
                 }}
-                disabled={deleting}
-                className="block w-full px-3 py-2 text-left text-sm text-danger hover:bg-secondary"
+                className="block w-full px-3 py-2 text-left text-sm text-primary hover:bg-secondary"
               >
-                {deleting ? "삭제 중..." : "삭제"}
+                수정
               </button>
-            )}
-          </div>
-        </>
-      )}
+              {isOwner && (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    onDelete();
+                  }}
+                  disabled={deleting}
+                  className="block w-full px-3 py-2 text-left text-sm text-danger hover:bg-secondary"
+                >
+                  {deleting ? "삭제 중..." : "삭제"}
+                </button>
+              )}
+            </div>
+          </>,
+          document.body,
+        )}
     </div>
   );
 }
