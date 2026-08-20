@@ -18,8 +18,10 @@ import {
   removeProjectMember,
 } from "../../../../api/project.js";
 import { memberDisplayName } from "../../../../utils/member.js";
+import { useUser } from "../../../../contexts/UserContext.jsx";
 
 export default function MembersTab({ projectId }) {
+  const { user } = useUser();
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -148,8 +150,12 @@ export default function MembersTab({ projectId }) {
                   <td className="truncate px-4 py-3 text-muted">
                     {member.role ?? "-"}
                   </td>
-                  {/* ProjectMemberResponse에 duty 필드가 아직 없어 표시 불가. 백엔드 추가 필요. */}
-                  <td className="truncate px-4 py-3 text-muted">-</td>
+                  {/* ProjectMemberResponse에 duty 필드가 아직 없어 다른 팀원 것은 표시 불가.
+                      내 행만 useUser()로 이미 가진 내 담당 업무를 보여준다. 백엔드에 필드
+                      추가되면 member.duty로 교체 필요. */}
+                  <td className="truncate px-4 py-3 text-muted">
+                    {member.memberId === user?.id ? user.duty ?? "-" : "-"}
+                  </td>
                   <td className="truncate px-4 py-3 text-muted">
                     {member.country
                       ? member.timezone
