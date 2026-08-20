@@ -23,6 +23,13 @@ export const createProject = (data) => client.post("/projects", data);
 /** 프로젝트 상세 */
 export const getProject = (projectId) => client.get(`/projects/${projectId}`);
 
+/**
+ * 프로젝트 상태 변경
+ * @param {"PENDING"|"IN_PROGRESS"|"COMPLETED"} status
+ */
+export const updateProjectStatus = (projectId, status) =>
+  client.patch(`/projects/${projectId}/status`, { status });
+
 /** 프로젝트 참여자 목록 */
 export const getProjectMembers = (projectId) =>
   client.get(`/projects/${projectId}/members`);
