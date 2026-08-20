@@ -4,11 +4,13 @@
  * 사용 예시:
  * <MembersTab projectId={project.id} />
  *
- * 명세에 AI 팀원 여부를 나타내는 필드가 없어, 삭제 불가 여부는 미리 판단하지 않고
- * 백엔드가 거부(예: 생성자 삭제 시도)했을 때 에러 메시지로 안내합니다.
+ * 삭제 불가 여부(생성자)는 미리 판단하지 않고 백엔드가 거부했을 때
+ * 에러 메시지로 안내합니다. AI 팀원은 role 수정이 불가하여 "⋯" 메뉴에
+ * 역할 수정 항목을 넣지 않습니다.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Avatar from "../../../../components/Avatar.jsx";
 import Button from "../../../../components/Button.jsx";
 import Input from "../../../../components/Input.jsx";
@@ -21,6 +23,65 @@ import {
 import { memberDisplayName } from "../../../../utils/member.js";
 import { useUser } from "../../../../contexts/UserContext.jsx";
 
+// 팀원 행 우측의 "⋯" 메뉴. 드롭다운은 document.body에 포털로 렌더링합니다.
+// 표를 감싼 컨테이너가 overflow-x-auto라 안에 absolute로 띄우면 아래쪽
+// 행 근처 메뉴가 잘려 보이는 문제(ProjectListPage에서 겪은 것과 동일)가 있어 회피합니다.
+function MemberActionsMenu({ isOpen, onToggle, canEditRole, onEditRole, onDelete }) {
+  const buttonRef = useRef(null);
+  const [position, setPosition] = useState(null);
+
+  const handleToggle = () => {
+    if (!isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setPosition({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+    }
+    onToggle();
+  };
+
+  return (
+    <div className="relative shrink-0">
+      <button
+        type="button"
+        ref={buttonRef}
+        onClick={handleToggle}
+        aria-label="팀원 메뉴"
+        className="rounded-full p-1.5 text-muted hover:bg-secondary hover:text-primary"
+      >
+        ⋯
+      </button>
+      {isOpen &&
+        position &&
+        createPortal(
+          <>
+            <div className="fixed inset-0 z-40" onClick={onToggle} />
+            <div
+              style={{ position: "fixed", top: position.top, right: position.right }}
+              className="z-50 w-32 overflow-hidden rounded-lg border border-border bg-white py-1 shadow-lg"
+            >
+              {canEditRole && (
+                <button
+                  type="button"
+                  onClick={onEditRole}
+                  className="block w-full px-3 py-2 text-left text-sm text-primary hover:bg-secondary"
+                >
+                  역할 수정
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={onDelete}
+                className="block w-full px-3 py-2 text-left text-sm text-danger hover:bg-secondary"
+              >
+                삭제
+              </button>
+            </div>
+          </>,
+          document.body,
+        )}
+    </div>
+  );
+}
+
 export default function MembersTab({ projectId }) {
   const { user } = useUser();
   const [members, setMembers] = useState([]);
@@ -32,6 +93,8 @@ export default function MembersTab({ projectId }) {
   const [inviteRole, setInviteRole] = useState("");
   const [inviteError, setInviteError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const [openMenuId, setOpenMenuId] = useState(null);
 
   const [editingRoleId, setEditingRoleId] = useState(null);
   const [editingRoleValue, setEditingRoleValue] = useState("");
@@ -58,6 +121,7 @@ export default function MembersTab({ projectId }) {
   }, [projectId]);
 
   const handleRemove = async (memberId, name) => {
+    setOpenMenuId(null);
     try {
       await removeProjectMember(projectId, memberId);
       setMembers((prev) => prev.filter((member) => member.memberId !== memberId));
@@ -67,6 +131,7 @@ export default function MembersTab({ projectId }) {
   };
 
   const startEditingRole = (member) => {
+    setOpenMenuId(null);
     setRoleError(null);
     setEditingRoleId(member.memberId);
     setEditingRoleValue(member.role ?? "");
@@ -186,29 +251,19 @@ export default function MembersTab({ projectId }) {
                   </td>
                   <td className="px-4 py-3 text-muted">
                     {editingRoleId === member.memberId ? (
-                      <div className="flex items-center gap-1">
-                        <Input
-                          value={editingRoleValue}
-                          onChange={(event) => setEditingRoleValue(event.target.value)}
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter") saveEditingRole();
-                            if (event.key === "Escape") cancelEditingRole();
-                          }}
-                          disabled={roleSaving}
-                          autoFocus
-                          className="text-sm"
-                        />
-                      </div>
-                    ) : member.isAiTeammate ? (
-                      <span className="block truncate">{member.role ?? "-"}</span>
+                      <Input
+                        value={editingRoleValue}
+                        onChange={(event) => setEditingRoleValue(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") saveEditingRole();
+                          if (event.key === "Escape") cancelEditingRole();
+                        }}
+                        disabled={roleSaving}
+                        autoFocus
+                        className="text-sm"
+                      />
                     ) : (
-                      <button
-                        type="button"
-                        onClick={() => startEditingRole(member)}
-                        className="block w-full truncate text-left hover:text-primary hover:underline"
-                      >
-                        {member.role ?? "-"}
-                      </button>
+                      <span className="block truncate">{member.role ?? "-"}</span>
                     )}
                   </td>
                   {/* ProjectMemberResponse에 duty 필드가 아직 없어 다른 팀원 것은 표시 불가.
@@ -225,14 +280,15 @@ export default function MembersTab({ projectId }) {
                       : "-"}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button
-                      type="button"
-                      onClick={() => handleRemove(member.memberId, memberDisplayName(member))}
-                      aria-label={`${memberDisplayName(member)} 삭제`}
-                      className="text-muted hover:text-danger"
-                    >
-                      ✕
-                    </button>
+                    <MemberActionsMenu
+                      isOpen={openMenuId === member.memberId}
+                      onToggle={() =>
+                        setOpenMenuId((current) => (current === member.memberId ? null : member.memberId))
+                      }
+                      canEditRole={!member.isAiTeammate}
+                      onEditRole={() => startEditingRole(member)}
+                      onDelete={() => handleRemove(member.memberId, memberDisplayName(member))}
+                    />
                   </td>
                 </tr>
               ))}
