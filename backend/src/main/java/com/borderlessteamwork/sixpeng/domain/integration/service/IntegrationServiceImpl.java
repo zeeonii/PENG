@@ -102,7 +102,12 @@ class IntegrationServiceImpl implements IntegrationService {
      */
     private void syncNotionDocuments(Long projectId, String accessToken) {
         for (NotionPage page : notionContentClient.searchAccessiblePages(accessToken)) {
-            String content = notionContentClient.fetchPageContent(accessToken, page.id());
+            String blockContent = notionContentClient.fetchPageContent(accessToken, page.id());
+            // 데이터베이스(표)의 한 행은 입력한 값이 본문 block이 아니라 속성(컬럼)에
+            // 들어있어서, 본문만으로는 비어 보인다. propertiesText를 함께 붙여준다.
+            String content = page.propertiesText().isBlank()
+                    ? blockContent
+                    : page.propertiesText() + blockContent;
 
             Optional<Document> existing = documentRepository
                     .findByProjectIdAndSourceTypeAndSourceId(projectId, DocumentSourceType.NOTION, page.id());

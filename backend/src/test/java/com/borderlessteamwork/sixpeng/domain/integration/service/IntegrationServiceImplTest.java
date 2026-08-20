@@ -132,7 +132,7 @@ class IntegrationServiceImplTest {
         when(integrationStatusRepository.save(any(IntegrationStatus.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         when(notionContentClient.searchAccessiblePages("token"))
-                .thenReturn(List.of(new NotionPage("page-1", "회의록", "https://notion.so/page-1")));
+                .thenReturn(List.of(new NotionPage("page-1", "회의록", "https://notion.so/page-1", "")));
         when(notionContentClient.fetchPageContent("token", "page-1")).thenReturn("오늘 논의한 내용");
         when(documentRepository.findByProjectIdAndSourceTypeAndSourceId(PROJECT_ID, DocumentSourceType.NOTION, "page-1"))
                 .thenReturn(Optional.empty());
@@ -158,7 +158,7 @@ class IntegrationServiceImplTest {
         when(integrationStatusRepository.save(any(IntegrationStatus.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         when(notionContentClient.searchAccessiblePages("token"))
-                .thenReturn(List.of(new NotionPage("page-1", "회의록", "https://notion.so/page-1")));
+                .thenReturn(List.of(new NotionPage("page-1", "회의록", "https://notion.so/page-1", "")));
         when(notionContentClient.fetchPageContent("token", "page-1")).thenReturn("업데이트된 내용");
         Document existing = Document.collect(PROJECT_ID, DocumentSourceType.NOTION, "page-1", "회의록", "옛날 내용", "https://notion.so/page-1");
         when(documentRepository.findByProjectIdAndSourceTypeAndSourceId(PROJECT_ID, DocumentSourceType.NOTION, "page-1"))
@@ -174,6 +174,30 @@ class IntegrationServiceImplTest {
     }
 
     @Test
+    void Notion_콜백_처리시_데이터베이스_행의_속성값도_본문에_합쳐진다() {
+        asParticipant();
+        when(notionOAuthClient.exchangeCodeForToken("code123"))
+                .thenReturn(new NotionTokenResponse("token", "ws", "Workspace"));
+        when(integrationStatusRepository.findByProjectIdAndType(PROJECT_ID, IntegrationType.NOTION))
+                .thenReturn(Optional.empty());
+        when(integrationStatusRepository.save(any(IntegrationStatus.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        // 표(데이터베이스)의 한 행: 본문 block은 비어 있고, 실제 내용은 속성(컬럼)에 들어있다.
+        when(notionContentClient.searchAccessiblePages("token"))
+                .thenReturn(List.of(new NotionPage("row-1", "홍길동", "https://notion.so/row-1", "소개: 백엔드 담당입니다\n")));
+        when(notionContentClient.fetchPageContent("token", "row-1")).thenReturn("");
+        when(documentRepository.findByProjectIdAndSourceTypeAndSourceId(PROJECT_ID, DocumentSourceType.NOTION, "row-1"))
+                .thenReturn(Optional.empty());
+        when(documentRepository.save(any(Document.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        integrationService.handleNotionCallback("code123", "p1", MEMBER_ID);
+
+        ArgumentCaptor<Document> captor = ArgumentCaptor.forClass(Document.class);
+        verify(documentRepository, times(1)).save(captor.capture());
+        assertThat(captor.getValue().getContent()).isEqualTo("소개: 백엔드 담당입니다\n");
+    }
+
+    @Test
     void Notion_콜백_처리시_내용이_그대로면_문서를_다시_저장하지_않는다() {
         asParticipant();
         when(notionOAuthClient.exchangeCodeForToken("code123"))
@@ -183,7 +207,7 @@ class IntegrationServiceImplTest {
         when(integrationStatusRepository.save(any(IntegrationStatus.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         when(notionContentClient.searchAccessiblePages("token"))
-                .thenReturn(List.of(new NotionPage("page-1", "회의록", "https://notion.so/page-1")));
+                .thenReturn(List.of(new NotionPage("page-1", "회의록", "https://notion.so/page-1", "")));
         when(notionContentClient.fetchPageContent("token", "page-1")).thenReturn("그대로인 내용");
         Document existing = Document.collect(PROJECT_ID, DocumentSourceType.NOTION, "page-1", "회의록", "그대로인 내용", "https://notion.so/page-1");
         when(documentRepository.findByProjectIdAndSourceTypeAndSourceId(PROJECT_ID, DocumentSourceType.NOTION, "page-1"))
@@ -202,7 +226,7 @@ class IntegrationServiceImplTest {
         when(integrationStatusRepository.findAllByTypeAndStatus(IntegrationType.NOTION, IntegrationConnectionStatus.CONNECTED))
                 .thenReturn(List.of(connection));
         when(notionContentClient.searchAccessiblePages("token"))
-                .thenReturn(List.of(new NotionPage("page-1", "회의록", "https://notion.so/page-1")));
+                .thenReturn(List.of(new NotionPage("page-1", "회의록", "https://notion.so/page-1", "")));
         when(notionContentClient.fetchPageContent("token", "page-1")).thenReturn("새 내용");
         when(documentRepository.findByProjectIdAndSourceTypeAndSourceId(PROJECT_ID, DocumentSourceType.NOTION, "page-1"))
                 .thenReturn(Optional.empty());
@@ -221,7 +245,7 @@ class IntegrationServiceImplTest {
                 .thenReturn(List.of(failing, ok));
         when(notionContentClient.searchAccessiblePages("bad-token")).thenThrow(new RuntimeException("boom"));
         when(notionContentClient.searchAccessiblePages("good-token"))
-                .thenReturn(List.of(new NotionPage("page-2", "제목", "https://notion.so/page-2")));
+                .thenReturn(List.of(new NotionPage("page-2", "제목", "https://notion.so/page-2", "")));
         when(notionContentClient.fetchPageContent("good-token", "page-2")).thenReturn("내용");
         when(documentRepository.findByProjectIdAndSourceTypeAndSourceId(2L, DocumentSourceType.NOTION, "page-2"))
                 .thenReturn(Optional.empty());
