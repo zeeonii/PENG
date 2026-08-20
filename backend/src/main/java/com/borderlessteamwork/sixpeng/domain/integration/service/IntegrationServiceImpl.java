@@ -5,6 +5,7 @@ import com.borderlessteamwork.sixpeng.domain.document.entity.DocumentSourceType;
 import com.borderlessteamwork.sixpeng.domain.document.repository.DocumentRepository;
 import com.borderlessteamwork.sixpeng.domain.integration.dto.response.AuthorizeUrlResponse;
 import com.borderlessteamwork.sixpeng.domain.integration.dto.response.IntegrationStatusResponse;
+import com.borderlessteamwork.sixpeng.domain.integration.entity.IntegrationConnectionStatus;
 import com.borderlessteamwork.sixpeng.domain.integration.entity.IntegrationStatus;
 import com.borderlessteamwork.sixpeng.domain.integration.entity.IntegrationType;
 import com.borderlessteamwork.sixpeng.domain.integration.repository.IntegrationStatusRepository;
@@ -21,6 +22,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -73,19 +76,53 @@ class IntegrationServiceImpl implements IntegrationService {
         return frontendUrl + "/projects/" + projectId + "?connected=notion";
     }
 
-    /** 연동 시점의 Notion page들을 document로 수집한다. 이후 재동기화(주기적 갱신)는 후속 작업. */
+    @Override
+    @Transactional
+    public void resyncAllNotionConnections() {
+        List<IntegrationStatus> connections = integrationStatusRepository
+                .findAllByTypeAndStatus(IntegrationType.NOTION, IntegrationConnectionStatus.CONNECTED);
+
+        for (IntegrationStatus connection : connections) {
+            try {
+                syncNotionDocuments(connection.getProjectId(), connection.getAccessToken());
+                connection.markSynced();
+            } catch (Exception e) {
+                log.warn("Notion 주기적 재동기화 실패: projectId={}", connection.getProjectId(), e);
+            }
+        }
+    }
+
+    /**
+     * Notion page들을 document로 수집한다. 연동 시점과 주기적 재동기화(폴링) 양쪽에서 호출한다.
+     *
+     * <p>폴링은 변경 여부와 무관하게 매번 모든 page를 다시 읽어오므로, 내용이 그대로인
+     * page까지 매번 갱신 처리하면 (1) collectedAt이 계속 앞당겨져 브리핑이 "새 문서가
+     * 계속 생긴 것"처럼 오판하고, (2) 임베딩 이벤트가 매번 다시 발행되어 OpenAI 호출이
+     * 낭비된다. 그래서 실제로 title/content/url이 달라졌을 때만 갱신한다.
+     */
     private void syncNotionDocuments(Long projectId, String accessToken) {
         for (NotionPage page : notionContentClient.searchAccessiblePages(accessToken)) {
             String content = notionContentClient.fetchPageContent(accessToken, page.id());
 
-            Document document = documentRepository
-                    .findByProjectIdAndSourceTypeAndSourceId(projectId, DocumentSourceType.NOTION, page.id())
-                    .orElseGet(() -> Document.collect(
-                            projectId, DocumentSourceType.NOTION, page.id(), page.title(), content, page.url()));
+            Optional<Document> existing = documentRepository
+                    .findByProjectIdAndSourceTypeAndSourceId(projectId, DocumentSourceType.NOTION, page.id());
+
+            if (existing.isPresent() && isUnchanged(existing.get(), page.title(), content, page.url())) {
+                continue;
+            }
+
+            Document document = existing.orElseGet(() -> Document.collect(
+                    projectId, DocumentSourceType.NOTION, page.id(), page.title(), content, page.url()));
             document.updateContent(page.title(), content, page.url());
             documentRepository.save(document);
             eventPublisher.publishEvent(new DocumentSavedEvent(document.getId()));
         }
+    }
+
+    private boolean isUnchanged(Document document, String title, String content, String url) {
+        return Objects.equals(document.getTitle(), title)
+                && Objects.equals(document.getContent(), content)
+                && Objects.equals(document.getSourceUrl(), url);
     }
 
     @Override

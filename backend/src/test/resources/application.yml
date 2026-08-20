@@ -55,6 +55,12 @@ app:
   cors:
     allowed-origins: http://localhost:5173
   frontend-url: http://localhost:5173
+  scheduling:
+    # @Scheduled(fixedRate=...)는 컨텍스트가 뜨자마자 한 번 즉시 실행되는데, 그러면
+    # 스케줄러 스레드가 테스트 중인 mock IntegrationService를 건드려 Mockito 스텁
+    # 상태가 깨진다(다른 테스트의 stubbing과 경합). 테스트에서는 꺼 둔다.
+    notion-sync:
+      enabled: false
 
 openai:
   base-url: https://api.openai.com/v1

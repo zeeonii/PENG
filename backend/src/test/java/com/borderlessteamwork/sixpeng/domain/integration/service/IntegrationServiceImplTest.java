@@ -174,6 +174,65 @@ class IntegrationServiceImplTest {
     }
 
     @Test
+    void Notion_콜백_처리시_내용이_그대로면_문서를_다시_저장하지_않는다() {
+        asParticipant();
+        when(notionOAuthClient.exchangeCodeForToken("code123"))
+                .thenReturn(new NotionTokenResponse("token", "ws", "Workspace"));
+        when(integrationStatusRepository.findByProjectIdAndType(PROJECT_ID, IntegrationType.NOTION))
+                .thenReturn(Optional.empty());
+        when(integrationStatusRepository.save(any(IntegrationStatus.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(notionContentClient.searchAccessiblePages("token"))
+                .thenReturn(List.of(new NotionPage("page-1", "회의록", "https://notion.so/page-1")));
+        when(notionContentClient.fetchPageContent("token", "page-1")).thenReturn("그대로인 내용");
+        Document existing = Document.collect(PROJECT_ID, DocumentSourceType.NOTION, "page-1", "회의록", "그대로인 내용", "https://notion.so/page-1");
+        when(documentRepository.findByProjectIdAndSourceTypeAndSourceId(PROJECT_ID, DocumentSourceType.NOTION, "page-1"))
+                .thenReturn(Optional.of(existing));
+
+        integrationService.handleNotionCallback("code123", "p1", MEMBER_ID);
+
+        // 폴링으로 매번 재수집하면서 내용이 안 바뀐 문서까지 저장하면 collectedAt이 계속
+        // 앞당겨져 브리핑이 "새 문서가 생겼다"고 오판하게 되므로, 저장 자체를 건너뛴다.
+        verify(documentRepository, never()).save(any());
+    }
+
+    @Test
+    void 폴링으로_연결된_모든_Notion_프로젝트를_재동기화한다() {
+        IntegrationStatus connection = IntegrationStatus.connectNotion(PROJECT_ID, "token", "ws", "Workspace");
+        when(integrationStatusRepository.findAllByTypeAndStatus(IntegrationType.NOTION, IntegrationConnectionStatus.CONNECTED))
+                .thenReturn(List.of(connection));
+        when(notionContentClient.searchAccessiblePages("token"))
+                .thenReturn(List.of(new NotionPage("page-1", "회의록", "https://notion.so/page-1")));
+        when(notionContentClient.fetchPageContent("token", "page-1")).thenReturn("새 내용");
+        when(documentRepository.findByProjectIdAndSourceTypeAndSourceId(PROJECT_ID, DocumentSourceType.NOTION, "page-1"))
+                .thenReturn(Optional.empty());
+        when(documentRepository.save(any(Document.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        integrationService.resyncAllNotionConnections();
+
+        verify(documentRepository, times(1)).save(any(Document.class));
+    }
+
+    @Test
+    void 폴링_중_한_프로젝트가_실패해도_나머지_프로젝트는_계속_처리한다() {
+        IntegrationStatus failing = IntegrationStatus.connectNotion(PROJECT_ID, "bad-token", "ws1", "WS1");
+        IntegrationStatus ok = IntegrationStatus.connectNotion(2L, "good-token", "ws2", "WS2");
+        when(integrationStatusRepository.findAllByTypeAndStatus(IntegrationType.NOTION, IntegrationConnectionStatus.CONNECTED))
+                .thenReturn(List.of(failing, ok));
+        when(notionContentClient.searchAccessiblePages("bad-token")).thenThrow(new RuntimeException("boom"));
+        when(notionContentClient.searchAccessiblePages("good-token"))
+                .thenReturn(List.of(new NotionPage("page-2", "제목", "https://notion.so/page-2")));
+        when(notionContentClient.fetchPageContent("good-token", "page-2")).thenReturn("내용");
+        when(documentRepository.findByProjectIdAndSourceTypeAndSourceId(2L, DocumentSourceType.NOTION, "page-2"))
+                .thenReturn(Optional.empty());
+        when(documentRepository.save(any(Document.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        integrationService.resyncAllNotionConnections();
+
+        verify(documentRepository, times(1)).save(any(Document.class));
+    }
+
+    @Test
     void state가_숫자가_아니면_예외가_발생한다() {
         assertThatThrownBy(() -> integrationService.handleNotionCallback("code123", "not-a-number", MEMBER_ID))
                 .isInstanceOf(BusinessException.class)
