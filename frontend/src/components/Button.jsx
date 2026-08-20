@@ -8,7 +8,7 @@
  */
 
 const VARIANT_STYLES = {
-  primary: "bg-primary text-accent hover:bg-primary-dark",
+  primary: "bg-active text-white hover:bg-[#E9784C]",
   secondary:
     "bg-white text-primary border border-border hover:bg-secondary",
 };

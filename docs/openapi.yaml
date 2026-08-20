@@ -128,7 +128,10 @@ paths:
     post:
       tags: [projects]
       summary: 프로젝트 생성
-      description: 생성자는 `role=PM` 으로 참여자에 자동 등록된다.
+      description: |
+        생성자는 `role=PM` 으로 참여자에 자동 등록된다.
+        요구사항 5-5 에 따라 **AI 팀원도 `role=AI` 로 함께 자동 합류**하므로,
+        생성 직후 참여자 목록은 항상 2명(생성자 + AI 팀원)이다.
       requestBody:
         required: true
         content:
@@ -173,6 +176,9 @@ paths:
     get:
       tags: [projects]
       summary: 프로젝트 참여자 목록
+      description: |
+        사람 팀원과 AI 팀원이 함께 내려온다.
+        AI 팀원 판별은 `isAiTeammate` 플래그로 한다 (`memberId` 는 환경마다 달라지므로 하드코딩 금지).
       parameters:
         - $ref: "#/components/parameters/ProjectId"
       responses:
@@ -231,7 +237,9 @@ paths:
     delete:
       tags: [projects]
       summary: 참여자 내보내기
-      description: 프로젝트 생성자는 내보낼 수 없다 (`400 P005`).
+      description: |
+        프로젝트 생성자는 내보낼 수 없다 (`400 P005`).
+        AI 팀원도 모든 프로젝트에 항상 참여해 있어야 하므로 내보낼 수 없다 (`400 P006`).
       parameters:
         - $ref: "#/components/parameters/ProjectId"
         - name: memberId
@@ -244,7 +252,7 @@ paths:
         "204":
           description: 삭제 성공
         "400":
-          description: 생성자는 제거할 수 없음 (`P005`)
+          description: 생성자 또는 AI 팀원은 제거할 수 없음 (`P005` / `P006`)
           content:
             application/json:
               schema:
@@ -544,16 +552,24 @@ components:
         language:
           type: string
           enum: [KR, EN]
+          description: 가입 시 Google locale 로 판정하며, 판별할 수 없으면 기본값 `EN`
         country:
           type: string
           nullable: true
+          description: Google 이 주지 않으므로 사용자가 설정하기 전까지 `null`
         timezone:
           type: string
-          nullable: true
+          description: 가입 시 시스템 기본값 `UTC` 로 채워진다
         duty:
           type: string
           nullable: true
           description: 담당 업무
+        showOriginalText:
+          type: boolean
+          description: 원문 표시 여부 (기본 true)
+        showTranslatedText:
+          type: boolean
+          description: 번역문 표시 여부 (기본 true)
       example:
         id: 1
         email: e2e@example.com
@@ -562,10 +578,17 @@ components:
         country: KR
         timezone: Asia/Seoul
         duty: 백엔드
+        showOriginalText: true
+        showTranslatedText: true
 
     MemberUpdateRequest:
       type: object
-      description: 모든 필드가 선택값. 생략하면 기존 값 유지.
+      description: |
+        모든 필드가 선택값. 생략하면 기존 값 유지.
+
+        번역 표시 토글은 **적용 후 최종 상태**로 검증한다. 두 값이 모두 false 가 되면
+        `400 M003`. 생략한 쪽은 기존 값이 그대로 쓰이므로, 이미 showOriginalText=false 인
+        회원이 showTranslatedText=false 만 보내도 거부된다.
       properties:
         language:
           type: string
@@ -576,6 +599,10 @@ components:
           type: string
         duty:
           type: string
+        showOriginalText:
+          type: boolean
+        showTranslatedText:
+          type: boolean
 
     Project:
       type: object
@@ -625,6 +652,18 @@ components:
         timezone:
           type: string
           nullable: true
+        isAiTeammate:
+          type: boolean
+          description: |
+            AI 팀원이면 true. **AI 팀원 판별은 반드시 이 필드로 한다.**
+            `memberId` 는 환경(로컬/개발/운영)마다 값이 달라지므로 하드코딩하면 안 된다.
+      example:
+        memberId: 2
+        name: AI 팀원
+        role: AI
+        country: null
+        timezone: null
+        isAiTeammate: true
 
     ProjectMemberInviteRequest:
       type: object
@@ -646,9 +685,9 @@ components:
           type: string
           description: |
             C001 잘못된 입력 / C005 접근 거부 (CSRF 포함) / C006 미인증
-            M001 회원 없음
+            M001 회원 없음 / M002 AI 팀원 계정 미초기화 / M003 번역 표시 토글이 둘 다 false
             P001 프로젝트 없음 / P002 참여자 아님 / P003 참여자 없음
-            P004 이미 참여 중 / P005 생성자는 제거 불가
+            P004 이미 참여 중 / P005 생성자는 제거 불가 / P006 AI 팀원은 제거 불가
             T001 번역 API 실패
             I001 Notion OAuth 인증 실패 / I002 잘못된 OAuth state
         message:

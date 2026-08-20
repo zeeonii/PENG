@@ -56,7 +56,7 @@ export default function AuthCallbackPage() {
   return (
     <main className="grid min-h-screen place-items-center bg-secondary p-6">
       <div className="text-center">
-        <p className="text-2xl font-bold text-primary">REMI.</p>
+        <p className="text-2xl font-bold text-primary">MORROW.</p>
         <p className="mt-4 text-sm text-muted">로그인 정보를 확인하는 중이에요.</p>
       </div>
     </main>

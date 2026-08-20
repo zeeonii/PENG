@@ -28,7 +28,7 @@ export default function MainLayout({ children }) {
     <div className="min-h-screen bg-secondary md:flex">
       <Sidebar user={sidebarUser} />
       <header className="sticky top-0 z-20 flex items-center justify-between bg-primary-dark px-5 py-4 text-accent md:hidden">
-        <Link to="/home" className="text-lg font-bold">REMI.</Link>
+        <Link to="/home" className="text-lg font-bold">MORROW.</Link>
         <nav className="flex gap-1">
           {mobileMenus.map((menu) => (
             <Link
@@ -37,7 +37,7 @@ export default function MainLayout({ children }) {
               className={`rounded px-2 py-1 text-xs ${
                 location.pathname === menu.path ||
                 location.pathname.startsWith(`${menu.path}/`)
-                  ? "bg-primary text-accent"
+                  ? "bg-active text-white"
                   : "text-accent/70"
               }`}
             >

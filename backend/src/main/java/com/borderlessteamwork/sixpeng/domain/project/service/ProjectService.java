@@ -24,6 +24,9 @@ public class ProjectService {
     /** 프로젝트를 만든 사람에게 기본으로 부여하는 역할 */
     private static final String OWNER_ROLE = "PM";
 
+    /** AI 팀원의 역할. 참여자 목록에서 사람 팀원과 구분하는 용도. */
+    private static final String AI_ROLE = "AI";
+
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final MemberRepository memberRepository;
@@ -33,6 +36,8 @@ public class ProjectService {
         Member owner = findMember(memberId);
         Project project = projectRepository.save(Project.of(request.name(), owner));
         projectMemberRepository.save(ProjectMember.of(project, owner, OWNER_ROLE));
+        // 요구사항 5-5: 사람 팀원과 함께 AI 팀원도 자동으로 합류한다.
+        projectMemberRepository.save(ProjectMember.of(project, findAiTeammate(), AI_ROLE));
         return project;
     }
 
@@ -80,7 +85,18 @@ public class ProjectService {
         ProjectMember projectMember = projectMemberRepository
                 .findByProjectIdAndMemberId(projectId, targetMemberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PROJECT_MEMBER_NOT_FOUND));
+
+        // AI 팀원은 모든 프로젝트에 항상 참여해 있어야 하므로 내보낼 수 없다.
+        if (projectMember.getMember().isAiTeammate()) {
+            throw new BusinessException(ErrorCode.PROJECT_AI_TEAMMATE_CANNOT_BE_REMOVED);
+        }
+
         projectMemberRepository.delete(projectMember);
+    }
+
+    private Member findAiTeammate() {
+        return memberRepository.findByGoogleId(Member.AI_TEAMMATE_GOOGLE_ID)
+                .orElseThrow(() -> new BusinessException(ErrorCode.AI_TEAMMATE_NOT_INITIALIZED));
     }
 
     private Project findProjectById(Long projectId) {

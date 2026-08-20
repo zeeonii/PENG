@@ -12,6 +12,7 @@ import {
   removeProjectMember,
 } from "../../../api/project.js";
 import { connectNotion as connectNotionIntegration } from "../../../api/integration.js";
+import { memberDisplayName } from "../../../utils/member.js";
 
 // 명세상 프로젝트 이름 수정 API(PATCH /projects/{id})가 없어 이 화면은
 // "수정" 대신 기존 프로젝트의 팀원·연동을 관리하는 용도로 동작합니다.
@@ -208,8 +209,8 @@ export default function ProjectCreatePage() {
                 {members.map((member) => (
                   <div key={member.memberId} className="flex items-center justify-between gap-3 rounded-lg border border-border px-4 py-3">
                     <span className="flex items-center gap-2">
-                      <Avatar name={member.name} size="sm" />
-                      <span className="text-sm text-primary">{member.name}</span>
+                      <Avatar name={memberDisplayName(member)} size="sm" />
+                      <span className="text-sm text-primary">{memberDisplayName(member)}</span>
                       {member.role && <span className="text-xs text-muted">· {member.role}</span>}
                     </span>
                     <Button variant="secondary" className="px-3 py-1.5 text-xs" onClick={() => removeMember(member.memberId)}>
