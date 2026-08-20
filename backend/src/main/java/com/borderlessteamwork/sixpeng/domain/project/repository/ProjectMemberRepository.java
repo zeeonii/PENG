@@ -16,6 +16,9 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Lo
 
     Optional<ProjectMember> findByProjectIdAndMemberId(Long projectId, Long memberId);
 
+    /** 프로젝트 삭제 시 참여자 행을 정리하는 용도. */
+    void deleteByProjectId(Long projectId);
+
     // createdBy 는 id 만 쓰므로 프록시 그대로 두고 fetch 하지 않는다.
     @Query("""
             select p
