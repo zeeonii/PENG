@@ -282,10 +282,10 @@ export default function ProjectListPage() {
                           autoFocus
                           className="text-sm"
                         />
-                        <button type="button" onClick={saveEditing} disabled={renameSaving} className="text-xs font-semibold text-active">
+                        <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); saveEditing(); }} disabled={renameSaving} className="text-xs font-semibold text-active">
                           저장
                         </button>
-                        <button type="button" onClick={cancelEditing} className="text-xs text-muted">
+                        <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); cancelEditing(); }} className="text-xs text-muted">
                           취소
                         </button>
                       </div>
@@ -364,10 +364,10 @@ export default function ProjectListPage() {
                         autoFocus
                         className="text-sm"
                       />
-                      <button type="button" onClick={saveEditing} disabled={renameSaving} className="text-xs font-semibold text-active">
+                      <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); saveEditing(); }} disabled={renameSaving} className="text-xs font-semibold text-active">
                         저장
                       </button>
-                      <button type="button" onClick={cancelEditing} className="text-xs text-muted">
+                      <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); cancelEditing(); }} className="text-xs text-muted">
                         취소
                       </button>
                     </div>
