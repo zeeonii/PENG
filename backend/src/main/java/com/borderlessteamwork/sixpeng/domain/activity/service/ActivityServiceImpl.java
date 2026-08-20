@@ -32,7 +32,7 @@ class ActivityServiceImpl implements ActivityService {
         List<ActivityResponse> activities = new ArrayList<>();
         documentRepository.findTop10ByProjectIdOrderByCollectedAtDesc(projectId)
                 .forEach(document -> activities.add(ActivityResponse.fromDocument(document)));
-        briefingRepository.findTop10ByProjectIdOrderByCreatedAtDesc(projectId)
+        briefingRepository.findTop10ByProjectIdAndHasUpdateTrueOrderByCreatedAtDesc(projectId)
                 .forEach(briefing -> activities.add(ActivityResponse.fromBriefing(briefing)));
 
         return activities.stream()
