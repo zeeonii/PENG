@@ -256,6 +256,13 @@ export default function MembersTab({ projectId }) {
                           if (event.key === "Enter") saveEditingRole();
                           if (event.key === "Escape") cancelEditingRole();
                         }}
+                        onBlur={() => {
+                          if (editingRoleValue.trim()) {
+                            saveEditingRole();
+                          } else {
+                            cancelEditingRole();
+                          }
+                        }}
                         disabled={roleSaving}
                         autoFocus
                         className="text-sm"
